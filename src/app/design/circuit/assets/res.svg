@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 200 80" width="200" height="80"
+    role="img" aria-labelledby="title desc" preserveAspectRatio="xMidYMid meet">
+  <title id="title">Resistor</title>
+  <desc id="desc">Schematic resistor symbol with wire leads</desc>
+  <defs>
+    <style>
+     .lead { stroke:#222; stroke-width:4; stroke-linecap:round; fill:none; }
+     .zig  { stroke:#222; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; fill:none; }
+     .pad  { fill:#222; }
+    </style>
+  </defs>
+
+  <!-- Wire leads -->
+  <line class="lead" x1="10"  y1="40" x2="30"  y2="40"/>
+  <line class="lead" x1="160" y1="40" x2="190" y2="40"/>
+
+  <!-- Zig-zag resistor body -->
+  <polyline class="zig" points="
+    30,40 42,18 56,62 70,18 84,62 98,18 112,62 126,18 140,62 160,40" />
+
+  <!-- Connection pads -->
+  <circle class="pad" cx="10"  cy="40" r="3.5"/>
+  <circle class="pad" cx="190" cy="40" r="3.5"/>
+</svg>

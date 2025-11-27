@@ -126,6 +126,8 @@ export default function RootLayout({ children }) {
           <BottomNav />
         </Providers>
       </body>
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3992023609980021"
+     crossorigin="anonymous"></script>
     </html>
   );
 }

@@ -57,10 +57,16 @@ export default function Navbar() {
                       <motion.div
                         layoutId="navbar-active"
                         className="absolute inset-0 bg-white/10 rounded-full"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        transition={{
+                          type: "spring",
+                          bounce: 0.2,
+                          duration: 0.6,
+                        }}
                       />
                     )}
-                    <span className={`relative z-10 ${isActive ? "text-white" : "text-gray-400 hover:text-white"}`}>
+                    <span
+                      className={`relative z-10 ${isActive ? "text-white" : "text-gray-400 hover:text-white"}`}
+                    >
                       {item.name}
                     </span>
                   </Link>
@@ -162,10 +168,11 @@ export default function Navbar() {
                   <Link
                     href={item.href}
                     onClick={() => setIsOpen(false)}
-                    className={`block px-4 py-3 rounded-xl text-base font-medium transition-all ${pathname === item.href
+                    className={`block px-4 py-3 rounded-xl text-base font-medium transition-all ${
+                      pathname === item.href
                         ? "text-black bg-neon-blue font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)]"
                         : "text-gray-300 hover:text-white hover:bg-white/10"
-                      }`}
+                    }`}
                   >
                     {item.name}
                   </Link>
@@ -180,7 +187,11 @@ export default function Navbar() {
                     className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 text-white"
                   >
                     {session.user?.image ? (
-                      <img src={session.user.image} alt="User" className="w-8 h-8 rounded-full" />
+                      <img
+                        src={session.user.image}
+                        alt="User"
+                        className="w-8 h-8 rounded-full"
+                      />
                     ) : (
                       <User className="w-6 h-6 text-neon-purple" />
                     )}

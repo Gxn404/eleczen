@@ -15,13 +15,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         try {
           await dbConnect();
-          const user = await User.findOne({ email }).select('+password');
-          if (!user) return null;
+          const user = await User.findOne({ email }).select("+password");
+
+          if (!user) {
+            console.log("Login failed: User not found for email:", email);
+            return null;
+          }
 
           // In a real app, compare passwords
           const passwordsMatch = await bcrypt.compare(password, user.password);
-          if (passwordsMatch) return user;
 
+          if (passwordsMatch) {
+            return user;
+          }
+
+          console.log("Login failed: Password mismatch for email:", email);
           return null;
         } catch (error) {
           console.error("Auth error:", error);

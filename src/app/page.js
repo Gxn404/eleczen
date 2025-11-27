@@ -1,9 +1,35 @@
 import { ArrowRight, BookOpen, Cpu, Layers, Zap } from "lucide-react";
 import Link from "next/link";
+import JsonLd from "@/components/JsonLd";
 
 export default function Home() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        name: "ElecZen",
+        url: "https://eleczen.com",
+        potentialAction: {
+          "@type": "SearchAction",
+          target:
+            "https://eleczen.com/encyclopedia?search={search_term_string}",
+          "query-input": "required name=search_term_string",
+        },
+      },
+      {
+        "@type": "Organization",
+        name: "ElecZen",
+        url: "https://eleczen.com",
+        logo: "https://eleczen.com/eleczen_512.png",
+        sameAs: ["https://twitter.com/eleczen", "https://github.com/eleczen"],
+      },
+    ],
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
+      <JsonLd data={jsonLd} />
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         {/* Background Effects */}

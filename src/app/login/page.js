@@ -1,46 +1,46 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { Zap, Github, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Zap, Github, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    if (searchParams.get('registered') === 'true') {
-      setSuccess('Account created successfully! Please sign in.');
+    if (searchParams.get("registered") === "true") {
+      setSuccess("Account created successfully! Please sign in.");
     }
   }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const result = await signIn('credentials', {
+      const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
       if (result?.error) {
-        setError('Invalid credentials');
+        setError("Invalid credentials");
       } else {
-        router.push('/profile');
+        router.push("/profile");
         router.refresh();
       }
     } catch (err) {
-      setError('Something went wrong');
+      setError("Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -57,10 +57,15 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md glass-panel rounded-2xl p-8 border border-white/10 relative z-10 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 mb-4 border border-white/10 shadow-[0_0_20px_rgba(0,243,255,0.2)] hover:scale-110 transition-transform duration-300 group">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 mb-4 border border-white/10 shadow-[0_0_20px_rgba(0,243,255,0.2)] hover:scale-110 transition-transform duration-300 group"
+          >
             <Zap className="w-8 h-8 text-neon-blue group-hover:text-white transition-colors" />
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Welcome Back</h1>
+          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+            Welcome Back
+          </h1>
           <p className="text-gray-400">Sign in to access your circuits</p>
         </div>
 
@@ -79,7 +84,9 @@ export default function LoginPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">Email Address</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">
+                Email Address
+              </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-gray-500 group-focus-within:text-neon-blue transition-colors" />
@@ -97,8 +104,15 @@ export default function LoginPage() {
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider">Password</label>
-                <a href="#" className="text-xs text-neon-blue hover:text-white transition-colors">Forgot password?</a>
+                <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Password
+                </label>
+                <a
+                  href="#"
+                  className="text-xs text-neon-blue hover:text-white transition-colors"
+                >
+                  Forgot password?
+                </a>
               </div>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -121,13 +135,11 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full flex items-center justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-[0_0_20px_rgba(0,243,255,0.3)] text-sm font-bold text-black bg-gradient-to-r from-neon-blue to-cyan-400 hover:from-white hover:to-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-blue transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                Sign In <ArrowRight className="ml-2 w-4 h-4" />
-              </>
-            )}
+            {loading
+              ? <Loader2 className="w-5 h-5 animate-spin" />
+              : <>
+                  Sign In <ArrowRight className="ml-2 w-4 h-4" />
+                </>}
           </button>
         </form>
 
@@ -137,7 +149,9 @@ export default function LoginPage() {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black text-gray-500">Or continue with</span>
+              <span className="px-4 bg-black text-gray-500">
+                Or continue with
+              </span>
             </div>
           </div>
 
@@ -146,14 +160,19 @@ export default function LoginPage() {
               <Github className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
             </button>
             <button className="w-full inline-flex justify-center items-center py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all group">
-              <span className="font-bold text-gray-400 group-hover:text-white transition-colors">G</span>
+              <span className="font-bold text-gray-400 group-hover:text-white transition-colors">
+                G
+              </span>
             </button>
           </div>
 
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-400">
-              Don't have an account?{' '}
-              <Link href="/signup" className="font-medium text-neon-blue hover:text-white transition-colors underline decoration-neon-blue/30 hover:decoration-white">
+              Don't have an account?{" "}
+              <Link
+                href="/signup"
+                className="font-medium text-neon-blue hover:text-white transition-colors underline decoration-neon-blue/30 hover:decoration-white"
+              >
                 Create account
               </Link>
             </p>

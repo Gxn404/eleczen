@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import dbConnect from "@/lib/db";
 import Component from "@/models/Component";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 async function getComponent(id) {
   await dbConnect();
@@ -73,25 +73,25 @@ export default async function ComponentDetail({ params }) {
               </h2>
 
               {component.specifications &&
-                Object.keys(component.specifications).length > 0
+              Object.keys(component.specifications).length > 0
                 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(component.specifications).map(
-                    ([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex justify-between items-center p-4 rounded-lg bg-white/5 border border-white/5"
-                      >
-                        <span className="text-gray-400 font-medium">
-                          {key}
-                        </span>
-                        <span className="text-white font-mono">{value}</span>
-                      </div>
-                    ),
-                  )}
-                </div>
+                    {Object.entries(component.specifications).map(
+                      ([key, value]) => (
+                        <div
+                          key={key}
+                          className="flex justify-between items-center p-4 rounded-lg bg-white/5 border border-white/5"
+                        >
+                          <span className="text-gray-400 font-medium">
+                            {key}
+                          </span>
+                          <span className="text-white font-mono">{value}</span>
+                        </div>
+                      ),
+                    )}
+                  </div>
                 : <p className="text-gray-500 italic">
-                  No detailed specifications available.
-                </p>}
+                    No detailed specifications available.
+                  </p>}
             </div>
           </div>
 
@@ -104,15 +104,15 @@ export default async function ComponentDetail({ params }) {
 
               {component.symbol
                 ? <img
-                  src={component.symbol}
-                  alt={`${component.name} symbol`}
-                  className="max-w-full max-h-64 filter invert opacity-90"
-                />
+                    src={component.symbol}
+                    alt={`${component.name} symbol`}
+                    className="max-w-full max-h-64 filter invert opacity-90"
+                  />
                 : <div className="w-48 h-48 rounded-full bg-gradient-to-b from-gray-800 to-black flex items-center justify-center border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                  <span className="text-gray-600 text-sm">
-                    No Symbol Image
-                  </span>
-                </div>}
+                    <span className="text-gray-600 text-sm">
+                      No Symbol Image
+                    </span>
+                  </div>}
             </div>
 
             {/* Actions or Related */}

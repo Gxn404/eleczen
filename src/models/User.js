@@ -8,12 +8,12 @@ const UserSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, 'Please provide an email'],
+      required: [true, "Please provide an email"],
       unique: true,
     },
     password: {
       type: String,
-      required: [true, 'Please provide a password'],
+      required: [true, "Please provide a password"],
       select: false, // Don't return password by default
     },
     image: {

@@ -8,23 +8,25 @@ export default function Home() {
     "@graph": [
       {
         "@type": "WebSite",
-        name: "ElecZen",
-        url: "https://eleczen.com",
-        potentialAction: {
+        "name": "ElecZen",
+        "url": "https://eleczen.app",
+        "potentialAction": {
           "@type": "SearchAction",
-          target:
-            "https://eleczen.com/encyclopedia?search={search_term_string}",
-          "query-input": "required name=search_term_string",
-        },
+          "target": "https://eleczen.app/encyclopedia?search={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
       },
       {
         "@type": "Organization",
-        name: "ElecZen",
-        url: "https://eleczen.com",
-        logo: "https://eleczen.com/eleczen_512.png",
-        sameAs: ["https://twitter.com/eleczen", "https://github.com/eleczen"],
-      },
-    ],
+        "name": "ElecZen",
+        "url": "https://eleczen.app",
+        "logo": "https://eleczen.app/eleczen_512.png",
+        "sameAs": [
+          "https://twitter.com/eleczen",
+          "https://github.com/eleczen"
+        ]
+      }
+    ]
   };
 
   return (

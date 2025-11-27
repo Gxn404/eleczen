@@ -1,56 +1,70 @@
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Post from "@/models/Post";
-import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-export const dynamic = "force-dynamic";
-
-export async function DELETE(request, { params }) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
-  await dbConnect();
-
+export async function GET(request, { params }) {
   try {
-    const deletedPost = await Post.findByIdAndDelete(id);
-    if (!deletedPost) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    const { id } = await params;
+    await dbConnect();
+    const post = await Post.findById(id);
+
+    if (!post) {
+      return NextResponse.json({ message: "Post not found" }, { status: 404 });
     }
-    return NextResponse.json({ success: true, data: {} });
+
+    return NextResponse.json(post);
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 400 },
-    );
+    console.error("Error fetching post:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
 
 export async function PUT(request, { params }) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
-  await dbConnect();
-
   try {
-    const body = await request.json();
-    const post = await Post.findByIdAndUpdate(id, body, {
+    const session = await auth();
+    if (!session || session.user.role !== "admin") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const data = await request.json();
+
+    await dbConnect();
+    const post = await Post.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,
     });
+
     if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return NextResponse.json({ message: "Post not found" }, { status: 404 });
     }
-    return NextResponse.json({ success: true, data: post });
+
+    return NextResponse.json(post);
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 400 },
-    );
+    console.error("Error updating post:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const session = await auth();
+    if (!session || session.user.role !== "admin") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    await dbConnect();
+    const post = await Post.findByIdAndDelete(id);
+
+    if (!post) {
+      return NextResponse.json({ message: "Post not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: "Post deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --background: #ffffff;
@@ -65,4 +66,10 @@ body {
   box-shadow:
     0 0 5px var(--neon-blue),
     inset 0 0 5px var(--neon-blue);
+}
+
+@supports(padding: env(safe-area-inset-bottom)) {
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

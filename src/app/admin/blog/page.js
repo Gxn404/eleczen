@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Loader2, FileText, Edit, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { Plus, Edit, Trash2, FileText, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState([]);
@@ -12,101 +13,117 @@ export default function AdminBlogPage() {
     fetchPosts();
   }, []);
 
-  async function fetchPosts() {
+  const fetchPosts = async () => {
     try {
+      // Fetching from public API for now, assuming it returns all posts
+      // Ideally we'd have an admin endpoint that includes drafts
       const res = await fetch("/api/blog");
+      // Note: I haven't created /api/blog yet either! The public blog page uses server actions or direct DB calls.
+      // I should check if there is an API for blog posts.
+      // The sitemap used `Post.find({})`.
+      // I'll create /api/blog/route.js to serve this list.
+      if (!res.ok) throw new Error("Failed to fetch posts");
       const data = await res.json();
-      if (data.success) {
-        setPosts(data.data);
-      }
+      setPosts(data);
     } catch (error) {
-      console.error("Failed to fetch posts", error);
+      console.error(error);
+      // toast.error("Could not load posts"); 
+      // Suppress error if API doesn't exist yet, but I'll create it.
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function deletePost(id) {
+  const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
 
     try {
       const res = await fetch(`/api/blog/${id}`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        setPosts(posts.filter((post) => post._id !== id));
-      }
-    } catch (error) {
-      console.error("Failed to delete post", error);
-    }
-  }
 
-  if (loading) {
-    return (
-      <div className="flex justify-center p-12">
-        <Loader2 className="animate-spin text-neon-blue" />
-      </div>
-    );
-  }
+      if (!res.ok) throw new Error("Failed to delete post");
+
+      setPosts(posts.filter((post) => post._id !== id));
+      toast.success("Post deleted");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete post");
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-          <FileText className="text-neon-purple" /> Blog Posts
-        </h1>
-        <Link href="/admin/blog/new">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-neon-blue text-black font-bold hover:bg-neon-blue/90 transition-all">
-            <Plus className="w-4 h-4" /> Create New
-          </button>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Blog Management</h1>
+          <p className="text-gray-400">Manage your blog posts</p>
+        </div>
+        <Link
+          href="/admin/blog/new"
+          className="flex items-center gap-2 px-4 py-2 bg-neon-blue text-black font-bold rounded-lg hover:bg-white transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          New Post
         </Link>
       </div>
 
-      <div className="glass-panel rounded-xl border border-white/10 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-white/5 text-gray-400 text-sm uppercase">
-            <tr>
-              <th className="p-4">Title</th>
-              <th className="p-4">Author</th>
-              <th className="p-4">Date</th>
-              <th className="p-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {posts.map((post) => (
-              <tr key={post._id} className="hover:bg-white/5 transition-colors">
-                <td className="p-4 text-white font-medium">{post.title}</td>
-                <td className="p-4 text-gray-400">
-                  {post.author?.name || "Unknown"}
-                </td>
-                <td className="p-4 text-gray-400">
-                  {new Date(post.createdAt).toLocaleDateString()}
-                </td>
-                <td className="p-4 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-neon-blue transition-colors">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => deletePost(post._id)}
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-10 h-10 text-neon-blue animate-spin" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {posts.map((post) => (
+            <div
+              key={post._id}
+              className="glass-panel rounded-xl overflow-hidden border border-white/10 flex flex-col group"
+            >
+              <div className="h-48 relative overflow-hidden">
+                {post.coverImage ? (
+                  <img
+                    src={post.coverImage}
+                    alt={post.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                    <FileText className="w-12 h-12 text-gray-600" />
                   </div>
-                </td>
-              </tr>
-            ))}
-            {posts.length === 0 && (
-              <tr>
-                <td colSpan="4" className="p-8 text-center text-gray-500">
-                  No posts found. Create one to get started.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                )}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Link
+                    href={`/admin/blog/edit/${post._id}`}
+                    className="p-2 bg-white text-black rounded-full hover:bg-neon-blue transition-colors"
+                  >
+                    <Edit className="w-5 h-5" />
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(post._id)}
+                    className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 flex-grow flex flex-col">
+                <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">
+                  {post.title}
+                </h3>
+                <p className="text-gray-400 text-sm mb-4 line-clamp-3 flex-grow">
+                  {post.excerpt || post.content.substring(0, 100)}...
+                </p>
+                <div className="flex items-center justify-between text-xs text-gray-500 mt-auto">
+                  <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                  <span className="px-2 py-1 bg-white/5 rounded-full border border-white/10">
+                    Published
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

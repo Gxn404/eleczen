@@ -1,4 +1,5 @@
 import { Activity, Cpu, FileText, Users } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminDashboard() {
   return (
@@ -7,25 +8,25 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="glass-panel p-6 rounded-xl border border-white/10">
+        <Link href="/admin/users" className="glass-panel p-6 rounded-xl border border-white/10 hover:border-neon-blue/50 transition-colors cursor-pointer group">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-400 font-medium">Total Users</h3>
+            <h3 className="text-gray-400 font-medium group-hover:text-white transition-colors">Total Users</h3>
             <Users className="text-neon-blue w-6 h-6" />
           </div>
           <p className="text-3xl font-bold text-white">1,234</p>
           <p className="text-sm text-green-400 mt-2 flex items-center gap-1">
             <Activity className="w-3 h-3" /> +12% this month
           </p>
-        </div>
+        </Link>
 
-        <div className="glass-panel p-6 rounded-xl border border-white/10">
+        <Link href="/admin/blog" className="glass-panel p-6 rounded-xl border border-white/10 hover:border-neon-purple/50 transition-colors cursor-pointer group">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-400 font-medium">Blog Posts</h3>
+            <h3 className="text-gray-400 font-medium group-hover:text-white transition-colors">Blog Posts</h3>
             <FileText className="text-neon-purple w-6 h-6" />
           </div>
           <p className="text-3xl font-bold text-white">45</p>
           <p className="text-sm text-gray-500 mt-2">5 drafts pending</p>
-        </div>
+        </Link>
 
         <div className="glass-panel p-6 rounded-xl border border-white/10">
           <div className="flex items-center justify-between mb-4">

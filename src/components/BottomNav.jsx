@@ -16,7 +16,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+    <div className="bottom-nav fixed bottom-0 left-0 right-0 z-50 md:hidden">
       <div className="glass-panel border-t border-white/10 backdrop-blur-xl bg-black/80 pb-safe">
         <div className="flex justify-around items-center h-16">
           {navItems.map((item) => {
@@ -25,11 +25,10 @@ export default function BottomNav() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-                  isActive
+                className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive
                     ? "text-neon-blue"
                     : "text-gray-400 hover:text-gray-200"
-                }`}
+                  }`}
               >
                 <item.icon
                   className={`w-5 h-5 ${isActive ? "animate-pulse" : ""}`}

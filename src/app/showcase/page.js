@@ -46,6 +46,8 @@ const PROJECTS = [
   },
 ];
 
+import Breadcrumbs from "@/components/Breadcrumbs";
+
 export default function ShowcasePage() {
   const [projects, setProjects] = useState(PROJECTS);
 
@@ -58,6 +60,7 @@ export default function ShowcasePage() {
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        <Breadcrumbs className="mb-8" />
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
             Community <span className="text-neon-pink">Showcase</span>

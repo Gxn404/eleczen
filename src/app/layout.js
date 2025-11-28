@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://eleczen.com"),
+  metadataBase: new URL("https://eleczen.app"),
   title: {
     default: "ElecZen | AI-Powered Electronics Platform",
     template: "%s | ElecZen",
@@ -61,7 +61,7 @@ export const metadata = {
     title: "ElecZen | AI-Powered Electronics Platform",
     description:
       "Design, simulate, and discover components with AI-powered tools.",
-    url: "https://eleczen.com",
+    url: "https://eleczen.app",
     siteName: "ElecZen",
     images: [
       {
@@ -127,7 +127,7 @@ export default function RootLayout({ children }) {
         </Providers>
       </body>
       <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3992023609980021"
-     crossorigin="anonymous"></script>
+        crossorigin="anonymous"></script>
     </html>
   );
 }

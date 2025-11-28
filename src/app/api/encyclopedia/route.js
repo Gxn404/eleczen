@@ -1,48 +1,26 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/db";
-import Component from "@/models/Component";
-
-export const dynamic = "force-dynamic";
+import { getComponents } from "@/lib/component-api";
 
 export async function GET(request) {
-  await dbConnect();
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get("search");
-
   try {
-    let query = {};
-    if (search) {
-      query = {
-        $or: [
-          { name: { $regex: search, $options: "i" } },
-          { description: { $regex: search, $options: "i" } },
-        ],
-      };
-    }
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+    const category = searchParams.get("category");
 
-    const components = await Component.find(query).sort({ name: 1 });
-    return NextResponse.json({ success: true, data: components });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 400 },
-    );
-  }
-}
+    const components = await getComponents({ search, category });
 
-export async function POST(request) {
-  await dbConnect();
-  try {
-    const body = await request.json();
-    const component = await Component.create(body);
-    return NextResponse.json(
-      { success: true, data: component },
-      { status: 201 },
-    );
+    // Return array directly to match blog pattern or wrap in object if preferred
+    // The client expects { success: true, data: [...] } based on previous code, 
+    // but let's stick to simple array for consistency with new blog API if possible.
+    // However, the client code I saw expects `data.success`. I'll update client to handle array or object.
+    // Actually, let's just return the array directly like the blog API.
+
+    return NextResponse.json(components);
   } catch (error) {
+    console.error("Error fetching components:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 400 },
+      { message: "Internal server error" },
+      { status: 500 }
     );
   }
 }

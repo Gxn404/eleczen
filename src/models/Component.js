@@ -5,30 +5,49 @@ const ComponentSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, "Please provide a component name"],
+      unique: true,
     },
-    category: {
+    slug: {
       type: String,
-      required: [true, "Please provide a category"], // e.g., Resistor, Capacitor, IC
+      unique: true,
     },
     description: {
       type: String,
       required: [true, "Please provide a description"],
     },
-    symbol: {
-      type: String, // URL or SVG string
+    category: {
+      type: String,
+      required: [true, "Please provide a category"],
+      enum: ["IC", "Resistor", "Capacitor", "Transistor", "Diode", "Sensor", "Microcontroller", "Other"],
     },
     specifications: {
       type: Map,
-      of: String, // Key-value pairs for specs like "Tolerance": "5%"
+      of: String,
     },
-    images: [
-      {
-        type: String,
-      },
-    ],
+    datasheetUrl: {
+      type: String,
+    },
+    pinoutImage: {
+      type: String,
+    },
+    pricing: {
+      type: Map,
+      of: String, // e.g., "Mouser": "$0.50"
+    },
+    tags: [String],
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-export default mongoose.models.Component ||
-  mongoose.model("Component", ComponentSchema);
+// Auto-generate slug from name
+ComponentSchema.pre("save", function (next) {
+  if (!this.slug) {
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+  }
+  next();
+});
+
+export default mongoose.models.Component || mongoose.model("Component", ComponentSchema);

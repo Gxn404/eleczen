@@ -10,6 +10,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@notionhq/client": "^5.4.0",
     "@tailwindcss/typography": "^0.5.19",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
@@ -19,6 +20,7 @@
     "next": "16.0.3",
     "next-auth": "^5.0.0-beta.30",
     "next-pwa": "^5.6.0",
+    "notion-to-md": "^3.1.9",
     "plotly.js": "^3.3.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",

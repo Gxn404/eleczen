@@ -3,11 +3,24 @@ import dbConnect from "@/lib/db";
 import Post from "@/models/Post";
 import { auth } from "@/auth";
 
+import { getPublishedPosts } from "@/lib/notion";
+
 export async function GET() {
   try {
     await dbConnect();
-    const posts = await Post.find({}).sort({ createdAt: -1 });
-    return NextResponse.json(posts);
+
+    // Fetch from MongoDB
+    const dbPosts = await Post.find({}).sort({ createdAt: -1 });
+
+    // Fetch from Notion
+    const notionPosts = await getPublishedPosts();
+
+    // Merge posts (Notion posts first, or sort by date)
+    const allPosts = [...notionPosts, ...dbPosts].sort((a, b) => {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    return NextResponse.json(allPosts);
   } catch (error) {
     console.error("Error fetching posts:", error);
     return NextResponse.json(

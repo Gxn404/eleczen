@@ -83,10 +83,15 @@ export const metadata = {
     "Access a suite of AI-powered electronics tools including Component Scanner, Circuit Recognizer, and essential calculators for Ohm's Law and Resistor Codes.",
 };
 
+import Breadcrumbs from "@/components/Breadcrumbs";
+
+// ... existing imports ...
+
 export default function ToolsPage() {
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        <Breadcrumbs className="mb-8" />
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
             Engineering <span className="text-neon-blue">Tools</span>

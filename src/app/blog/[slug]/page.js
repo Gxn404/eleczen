@@ -14,12 +14,26 @@ import "highlight.js/styles/atom-one-dark.css"; // Dark theme for code blocks
 
 export const dynamic = "force-dynamic";
 
+import { getPostBySlug } from "@/lib/notion";
+
 // Server Component for SEO and initial data
 async function getPost(slug) {
   await dbConnect();
+
+  // Try MongoDB first
   const post = await Post.findOne({ slug }).populate("author", "name image");
-  if (!post) return null;
-  return JSON.parse(JSON.stringify(post)); // Serialize for client
+
+  if (post) {
+    return JSON.parse(JSON.stringify(post));
+  }
+
+  // Try Notion
+  const notionPost = await getPostBySlug(slug);
+  if (notionPost) {
+    return notionPost;
+  }
+
+  return null;
 }
 
 export async function generateMetadata({ params }) {

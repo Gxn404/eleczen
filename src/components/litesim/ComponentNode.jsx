@@ -1,0 +1,44 @@
+import React, { useRef } from 'react';
+import { getComponentDef } from './parts';
+
+const ComponentNode = ({ component, isSelected, onMouseDown }) => {
+    const { type, x, y, rotation, state } = component;
+    const CompDef = getComponentDef(type);
+
+    if (!CompDef) return null;
+
+    return (
+        <g
+            transform={`translate(${x}, ${y}) rotate(${rotation})`}
+            onMouseDown={(e) => onMouseDown(e, component.id)}
+            style={{ cursor: 'grab' }}
+        >
+            {/* Selection Halo */}
+            {isSelected && (
+                <rect
+                    x="-30" y="-30" width="60" height="60"
+                    fill="none" stroke="#0ff" strokeWidth="1" strokeDasharray="4 2"
+                    rx="5"
+                    className="animate-pulse"
+                />
+            )}
+
+            <CompDef state={state} />
+
+            {/* Render Ports for interaction */}
+            {CompDef.ports.map(port => (
+                <circle
+                    key={port.id}
+                    cx={port.x} cy={port.y} r="4"
+                    fill="transparent"
+                    stroke="transparent"
+                    className="hover:fill-white hover:stroke-cyan-500 cursor-crosshair"
+                    data-port-id={port.id}
+                    data-comp-id={component.id}
+                />
+            ))}
+        </g>
+    );
+};
+
+export default ComponentNode;

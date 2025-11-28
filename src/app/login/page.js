@@ -107,12 +107,12 @@ export default function LoginPage() {
                 <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Password
                 </label>
-                <a
-                  href="#"
+                <Link
+                  href="/forgot-password"
                   className="text-xs text-neon-blue hover:text-white transition-colors"
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -138,8 +138,8 @@ export default function LoginPage() {
             {loading
               ? <Loader2 className="w-5 h-5 animate-spin" />
               : <>
-                  Sign In <ArrowRight className="ml-2 w-4 h-4" />
-                </>}
+                Sign In <ArrowRight className="ml-2 w-4 h-4" />
+              </>}
           </button>
         </form>
 
@@ -156,10 +156,16 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button className="w-full inline-flex justify-center items-center py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all group">
+            <button
+              onClick={() => signIn("github", { callbackUrl: "/profile" })}
+              className="w-full inline-flex justify-center items-center py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all group"
+            >
               <Github className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
             </button>
-            <button className="w-full inline-flex justify-center items-center py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all group">
+            <button
+              onClick={() => signIn("google", { callbackUrl: "/profile" })}
+              className="w-full inline-flex justify-center items-center py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all group"
+            >
               <span className="font-bold text-gray-400 group-hover:text-white transition-colors">
                 G
               </span>

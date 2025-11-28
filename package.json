@@ -11,10 +11,19 @@
   },
   "dependencies": {
     "@notionhq/client": "^5.4.0",
+    "@radix-ui/react-context-menu": "^2.2.16",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/typography": "^0.5.19",
+    "@types/minimatch": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.24",
+    "jotai": "^2.15.1",
     "lucide-react": "^0.554.0",
     "mongoose": "^8.19.4",
     "next": "16.0.3",
@@ -30,6 +39,7 @@
     "recharts": "^3.5.0",
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
+    "resend": "^6.5.2",
     "tailwind-merge": "^3.4.0",
     "tesseract.js": "^6.0.1",
     "zustand": "^5.0.8"
@@ -39,6 +49,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/resolve": "^1.20.6",
     "babel-plugin-react-compiler": "1.0.0",
+    "baseline-browser-mapping": "^2.8.32",
     "tailwindcss": "^4"
   }
 }

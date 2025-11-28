@@ -13,7 +13,13 @@ export async function GET() {
     const dbPosts = await Post.find({}).sort({ createdAt: -1 });
 
     // Fetch from Notion
-    const notionPosts = await getPublishedPosts();
+    let notionPosts = [];
+    try {
+      notionPosts = await getPublishedPosts();
+    } catch (notionError) {
+      console.error("Failed to fetch Notion posts:", notionError);
+      // Continue without Notion posts
+    }
 
     // Merge posts (Notion posts first, or sort by date)
     const allPosts = [...notionPosts, ...dbPosts].sort((a, b) => {

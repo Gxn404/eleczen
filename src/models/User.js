@@ -24,6 +24,20 @@ const UserSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    provider: {
+      type: String,
+      default: "credentials", // google, github, credentials
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otp: {
+      type: String,
+    },
+    otpExpires: {
+      type: Date,
+    },
     savedCircuits: [
       {
         type: mongoose.Schema.Types.ObjectId,

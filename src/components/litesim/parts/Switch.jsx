@@ -1,7 +1,7 @@
 import React from 'react';
 
-const Switch = ({ state }) => {
-    const on = state?.on;
+const Switch = ({ component }) => {
+    const on = component?.state?.on;
 
     return (
         <g>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Battery = ({ state }) => {
+const Battery = ({ component }) => {
     return (
         <g>
             {/* Body */}
@@ -14,7 +14,9 @@ const Battery = ({ state }) => {
             <text x="5" y="-10" fill="#0ff" fontSize="12" fontFamily="monospace">-</text>
 
             {/* Label */}
-            <text x="0" y="10" fill="#666" fontSize="10" textAnchor="middle" fontFamily="monospace">9V</text>
+            <text x="0" y="10" fill="#666" fontSize="10" textAnchor="middle" fontFamily="monospace">
+                {component?.properties?.voltage || 9}V
+            </text>
         </g>
     );
 };

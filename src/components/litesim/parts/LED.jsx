@@ -1,8 +1,8 @@
 import React from 'react';
 
-const LED = ({ state }) => {
-    const active = state?.active;
-    const color = state?.color || '#f00'; // Default red
+const LED = ({ component }) => {
+    const active = component?.state?.active;
+    const color = component?.properties?.color || component?.state?.color || '#f00'; // Default red
 
     return (
         <g>

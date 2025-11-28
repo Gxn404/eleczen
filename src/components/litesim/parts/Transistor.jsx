@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Transistor = ({ state }) => {
+const Transistor = ({ component }) => {
     return (
         <g>
             {/* Body */}

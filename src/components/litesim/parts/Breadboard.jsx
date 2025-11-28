@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Breadboard = ({ state }) => {
+const Breadboard = ({ component }) => {
     // 10x4 mini breadboard
     // Just visual holes for now
     const rows = 4;

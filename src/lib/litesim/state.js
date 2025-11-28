@@ -5,9 +5,46 @@ import { evaluateCircuit } from './engine';
 export const useLiteSimStore = create(
     persist(
         (set, get) => ({
-            components: [],
-            wires: [],
-            selection: null, // { type: 'component' | 'wire', id: string }
+            // New Schema Root
+            meta: {
+                projectName: "Untitled Project",
+                author: "User",
+                createdAt: new Date().toISOString(),
+                lastModified: new Date().toISOString(),
+                version: "1.0.0",
+                description: "ElecZen Circuit"
+            },
+            canvas: {
+                width: 1920,
+                height: 1080,
+                gridSize: 10,
+                zoomLevel: 1.0
+            },
+            components: [], // Now includes 'connections' and 'properties'
+            wires: [], // Kept for rendering compatibility, synced with connections
+            simulation: {
+                mode: "DC",
+                parameters: {
+                    timeStep: "1ms",
+                    totalTime: "100ms",
+                    temperature: "25C"
+                },
+                results: []
+            },
+            modules: [],
+            settings: {
+                snapToGrid: true,
+                showLabels: true,
+                enableAnimations: true
+            },
+            upgrades: [
+                { feature: "Analog Oscilloscope", description: "Virtual oscilloscope", enabled: false },
+                { feature: "3D View", description: "3D visualization", enabled: false },
+                { feature: "Component Marketplace", description: "Download components", enabled: true }
+            ],
+
+            selection: null,
+            isRunning: false,
 
             addComponent: (type, x, y) => set(state => ({
                 components: [
@@ -18,14 +55,23 @@ export const useLiteSimStore = create(
                         x,
                         y,
                         rotation: 0,
-                        state: {} // internal state (e.g. switch on/off)
+                        state: { active: false },
+                        properties: {},
+                        connections: [] // New: Pin-based connections
                     }
-                ]
+                ],
+                meta: { ...state.meta, lastModified: new Date().toISOString() }
             })),
 
             updateComponentPosition: (id, x, y) => set(state => ({
                 components: state.components.map(c =>
                     c.id === id ? { ...c, x, y } : c
+                )
+            })),
+
+            updateComponentProperty: (id, key, value) => set(state => ({
+                components: state.components.map(c =>
+                    c.id === id ? { ...c, properties: { ...c.properties, [key]: value } } : c
                 )
             })),
 
@@ -79,6 +125,18 @@ export const useLiteSimStore = create(
             }),
 
             setSelection: (type, id) => set({ selection: { type, id } }),
+
+            setIsRunning: (isRunning) => set({ isRunning }),
+
+            updateSetting: (key, value) => set(state => ({
+                settings: { ...state.settings, [key]: value }
+            })),
+
+            toggleUpgrade: (featureName) => set(state => ({
+                upgrades: state.upgrades.map(u =>
+                    u.feature === featureName ? { ...u, enabled: !u.enabled } : u
+                )
+            })),
 
             // Simulation Step
             runSimulation: () => {

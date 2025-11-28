@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Resistor = ({ state }) => {
+const Resistor = ({ component }) => {
     return (
         <g>
             {/* Body Zigzag */}
@@ -12,7 +12,9 @@ const Resistor = ({ state }) => {
             <circle cx="20" cy="0" r="2" fill="#888" />
 
             {/* Value Label */}
-            <text x="0" y="15" fill="#aaa" fontSize="10" textAnchor="middle" fontFamily="monospace">1kΩ</text>
+            <text x="0" y="15" fill="#aaa" fontSize="10" textAnchor="middle" fontFamily="monospace">
+                {component?.properties?.resistance || 1000}Ω
+            </text>
         </g>
     );
 };

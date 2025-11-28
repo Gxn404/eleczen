@@ -1,8 +1,8 @@
 import React from 'react';
 
-const Motor = ({ state }) => {
-    const active = state?.active;
-    const speed = state?.speed || 0;
+const Motor = ({ component }) => {
+    const active = component?.state?.active;
+    const speed = component?.state?.speed || 0;
 
     return (
         <g>

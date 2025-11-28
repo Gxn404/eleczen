@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { getComponentDef } from './parts';
 
-const ComponentNode = ({ component, isSelected, onMouseDown }) => {
+const ComponentNode = ({ component, isSelected, onMouseDown, showLabels = true }) => {
     const { type, x, y, rotation, state } = component;
     const CompDef = getComponentDef(type);
 
@@ -23,7 +23,7 @@ const ComponentNode = ({ component, isSelected, onMouseDown }) => {
                 />
             )}
 
-            <CompDef state={state} />
+            <CompDef component={component} showLabels={showLabels} />
 
             {/* Render Ports for interaction */}
             {CompDef.ports.map(port => (

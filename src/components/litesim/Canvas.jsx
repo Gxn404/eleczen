@@ -5,17 +5,21 @@ import ComponentNode from './ComponentNode';
 import Wire from './Wire';
 import { getComponentDef } from './parts';
 
-const Canvas = () => {
+const Canvas = ({ settings }) => {
     const {
         components, wires, selection,
         addComponent, updateComponentPosition, addWire,
-        setSelection, removeSelection, runSimulation
+        setSelection, removeSelection, runSimulation, clearCanvas
     } = useLiteSimStore();
 
     const svgRef = useRef(null);
     const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
     const [drag, setDrag] = useState(null); // { type: 'pan' | 'comp', id, startX, startY, origX, origY }
     const [wiring, setWiring] = useState(null); // { fromComp, fromPort, currX, currY }
+
+    // Default settings if not provided
+    const snapToGrid = settings?.snapToGrid ?? true;
+    const showLabels = settings?.showLabels ?? true;
 
     // Simulation Loop
     useEffect(() => {
@@ -35,7 +39,6 @@ const Canvas = () => {
     }, [removeSelection]);
 
     // Coordinate conversion
-    // Coordinate conversion
     const screenToWorld = (sx, sy) => {
         if (!svgRef.current) return { x: 0, y: 0 };
         const pt = svgRef.current.createSVGPoint();
@@ -52,6 +55,7 @@ const Canvas = () => {
         // Pan start (Background click)
         setDrag({ type: 'pan', startX: e.clientX, startY: e.clientY, origX: view.x, origY: view.y });
     };
+
     const handleCompMouseDown = (e, id) => {
         e.stopPropagation();
 
@@ -109,22 +113,21 @@ const Canvas = () => {
             const pt = screenToWorld(e.clientX, e.clientY);
             const dx = pt.x - drag.startX;
             const dy = pt.y - drag.startY;
-            // Snap to grid (10px)
-            let newX = Math.round((drag.origX + dx) / 10) * 10;
-            let newY = Math.round((drag.origY + dy) / 10) * 10;
+
+            let newX = drag.origX + dx;
+            let newY = drag.origY + dy;
+
+            if (snapToGrid) {
+                newX = Math.round(newX / 10) * 10;
+                newY = Math.round(newY / 10) * 10;
+            }
+
             updateComponentPosition(drag.id, newX, newY);
         }
     };
 
     const handleMouseUp = (e) => {
         if (wiring) {
-            // Check if dropped on a port
-            // We need to temporarily hide the wiring line or use pointer-events-none on it 
-            // so elementFromPoint sees the port below.
-            // But SVG order matters. The wiring line is drawn BEFORE components in my code?
-            // No, wires are drawn first. But the "active wiring line" is drawn AFTER components.
-            // So we might block the click.
-
             const target = document.elementFromPoint(e.clientX, e.clientY);
             if (target && target.dataset.portId) {
                 const toComp = target.dataset.compId;
@@ -150,9 +153,13 @@ const Canvas = () => {
         const type = e.dataTransfer.getData('componentType');
         if (type) {
             const pt = screenToWorld(e.clientX, e.clientY);
-            // Snap
-            const x = Math.round(pt.x / 10) * 10;
-            const y = Math.round(pt.y / 10) * 10;
+            let x = pt.x;
+            let y = pt.y;
+
+            if (snapToGrid) {
+                x = Math.round(x / 10) * 10;
+                y = Math.round(y / 10) * 10;
+            }
             addComponent(type, x, y);
         }
     };
@@ -226,10 +233,11 @@ const Canvas = () => {
                             component={comp}
                             isSelected={selection?.id === comp.id}
                             onMouseDown={handleCompMouseDown}
+                            showLabels={showLabels}
                         />
                     ))}
 
-                    {/* Wiring Line (Drawn on top, but pointer-events-none to allow drop detection) */}
+                    {/* Wiring Line */}
                     {wiring && (
                         <path
                             d={getWirePath(
@@ -259,7 +267,7 @@ const Canvas = () => {
             {/* Controls Overlay */}
             <div className="absolute bottom-4 right-4 flex gap-2">
                 <button className="bg-gray-800 text-white p-2 rounded hover:bg-gray-700" onClick={() => setView({ x: 0, y: 0, zoom: 1 })}>Reset View</button>
-                <button className="bg-gray-800 text-white p-2 rounded hover:bg-gray-700" onClick={() => useLiteSimStore.getState().clearCanvas()}>Clear</button>
+                <button className="bg-gray-800 text-white p-2 rounded hover:bg-gray-700" onClick={clearCanvas}>Clear</button>
                 <button className="bg-cyan-900 text-cyan-100 p-2 rounded hover:bg-cyan-800" onClick={() => {
                     // Export JSON
                     const state = useLiteSimStore.getState();

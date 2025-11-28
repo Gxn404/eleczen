@@ -41,12 +41,24 @@ export const useLiteSimStore = create(
                 return { components: comps };
             }),
 
-            addWire: (fromComp, fromPort, toComp, toPort) => set(state => ({
-                wires: [
-                    ...state.wires,
-                    { id: `w_${Date.now()}`, fromComp, fromPort, toComp, toPort }
-                ]
-            })),
+            addWire: (fromComp, fromPort, toComp, toPort) => set(state => {
+                // 1. Prevent self-loops (same component, same port - though different ports on same comp might be valid for shorting)
+                if (fromComp === toComp && fromPort === toPort) return {};
+
+                // 2. Prevent duplicates (undirected check)
+                const exists = state.wires.some(w =>
+                    (w.fromComp === fromComp && w.fromPort === fromPort && w.toComp === toComp && w.toPort === toPort) ||
+                    (w.fromComp === toComp && w.fromPort === toPort && w.toComp === fromComp && w.toPort === fromPort)
+                );
+                if (exists) return {};
+
+                return {
+                    wires: [
+                        ...state.wires,
+                        { id: `w_${Date.now()}`, fromComp, fromPort, toComp, toPort }
+                    ]
+                };
+            }),
 
             removeSelection: () => set(state => {
                 if (!state.selection) return {};

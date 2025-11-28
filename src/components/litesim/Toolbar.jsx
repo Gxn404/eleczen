@@ -7,6 +7,8 @@ const TOOLS = [
     { type: 'resistor', label: 'Resistor', icon: '〰️' },
     { type: 'switch', label: 'Switch', icon: '🔌' },
     { type: 'motor', label: 'Motor', icon: '⚙️' },
+    { type: 'transistor', label: 'Transistor', icon: '🔽' },
+    { type: 'breadboard', label: 'Breadboard', icon: '🎛️' },
 ];
 
 const Toolbar = () => {

@@ -23,32 +23,46 @@ const Canvas = () => {
         return () => clearInterval(interval);
     }, [runSimulation]);
 
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                removeSelection();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [removeSelection]);
+
+    // Coordinate conversion
     // Coordinate conversion
     const screenToWorld = (sx, sy) => {
         if (!svgRef.current) return { x: 0, y: 0 };
         const pt = svgRef.current.createSVGPoint();
         pt.x = sx;
         pt.y = sy;
-        return pt.matrixTransform(svgRef.current.getScreenCTM().inverse());
+        const svgP = pt.matrixTransform(svgRef.current.getScreenCTM().inverse());
+        return {
+            x: (svgP.x - view.x) / view.zoom,
+            y: (svgP.y - view.y) / view.zoom
+        };
     };
 
     const handleMouseDown = (e) => {
+        // Pan start (Background click)
+        setDrag({ type: 'pan', startX: e.clientX, startY: e.clientY, origX: view.x, origY: view.y });
+    };
+    const handleCompMouseDown = (e, id) => {
+        e.stopPropagation();
+
         // Check if clicked on a port
         if (e.target.dataset.portId) {
-            const compId = e.target.dataset.compId;
             const portId = e.target.dataset.portId;
             const pt = screenToWorld(e.clientX, e.clientY);
-            setWiring({ fromComp: compId, fromPort: portId, currX: pt.x, currY: pt.y });
-            e.stopPropagation();
+            setWiring({ fromComp: id, fromPort: portId, currX: pt.x, currY: pt.y });
             return;
         }
 
-        // Pan start
-        setDrag({ type: 'pan', startX: e.clientX, startY: e.clientY, origX: view.x, origY: view.y });
-    };
-
-    const handleCompMouseDown = (e, id) => {
-        e.stopPropagation();
         const pt = screenToWorld(e.clientX, e.clientY);
         const comp = components.find(c => c.id === id);
         setSelection('component', id);
@@ -58,6 +72,29 @@ const Canvas = () => {
     const handleMouseMove = (e) => {
         if (wiring) {
             const pt = screenToWorld(e.clientX, e.clientY);
+
+            // Snapping to ports
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            if (target && target.dataset.portId) {
+                const compId = target.dataset.compId;
+                const portId = target.dataset.portId;
+
+                const comp = components.find(c => c.id === compId);
+                if (comp) {
+                    const def = getComponentDef(comp.type);
+                    const port = def.ports.find(p => p.id === portId);
+                    if (port) {
+                        // Snap to port center
+                        setWiring(prev => ({
+                            ...prev,
+                            currX: comp.x + port.x,
+                            currY: comp.y + port.y
+                        }));
+                        return;
+                    }
+                }
+            }
+
             setWiring(prev => ({ ...prev, currX: pt.x, currY: pt.y }));
             return;
         }
@@ -82,6 +119,12 @@ const Canvas = () => {
     const handleMouseUp = (e) => {
         if (wiring) {
             // Check if dropped on a port
+            // We need to temporarily hide the wiring line or use pointer-events-none on it 
+            // so elementFromPoint sees the port below.
+            // But SVG order matters. The wiring line is drawn BEFORE components in my code?
+            // No, wires are drawn first. But the "active wiring line" is drawn AFTER components.
+            // So we might block the click.
+
             const target = document.elementFromPoint(e.clientX, e.clientY);
             if (target && target.dataset.portId) {
                 const toComp = target.dataset.compId;
@@ -112,6 +155,12 @@ const Canvas = () => {
             const y = Math.round(pt.y / 10) * 10;
             addComponent(type, x, y);
         }
+    };
+
+    // Helper for orthogonal path
+    const getWirePath = (x1, y1, x2, y2) => {
+        const midX = (x1 + x2) / 2;
+        return `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
     };
 
     return (
@@ -151,28 +200,24 @@ const Canvas = () => {
                         const p2 = def2.ports.find(p => p.id === wire.toPort);
 
                         // Transform local port coords to world
-                        // Simple rotation logic omitted for brevity, assuming 0 rotation for now
                         const w1 = { x: c1.x + p1.x, y: c1.y + p1.y };
                         const w2 = { x: c2.x + p2.x, y: c2.y + p2.y };
 
-                        return <Wire key={wire.id} wire={wire} fromPos={w1} toPos={w2} active={false} />;
+                        return (
+                            <Wire
+                                key={wire.id}
+                                wire={wire}
+                                fromPos={w1}
+                                toPos={w2}
+                                active={false}
+                                isSelected={selection?.type === 'wire' && selection?.id === wire.id}
+                                onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    setSelection('wire', wire.id);
+                                }}
+                            />
+                        );
                     })}
-
-                    {/* Wiring Line */}
-                    {wiring && (
-                        <path
-                            d={`M ${wiring.currX} ${wiring.currY} L ${
-                                // Find start pos
-                                (() => {
-                                    const c = components.find(c => c.id === wiring.fromComp);
-                                    const def = getComponentDef(c.type);
-                                    const p = def.ports.find(p => p.id === wiring.fromPort);
-                                    return `${c.x + p.x} ${c.y + p.y}`;
-                                })()
-                                }`}
-                            stroke="#0ff" strokeWidth="2" strokeDasharray="5 5"
-                        />
-                    )}
 
                     {/* Components */}
                     {components.map(comp => (
@@ -183,6 +228,31 @@ const Canvas = () => {
                             onMouseDown={handleCompMouseDown}
                         />
                     ))}
+
+                    {/* Wiring Line (Drawn on top, but pointer-events-none to allow drop detection) */}
+                    {wiring && (
+                        <path
+                            d={getWirePath(
+                                // Start
+                                (() => {
+                                    const c = components.find(c => c.id === wiring.fromComp);
+                                    const def = getComponentDef(c.type);
+                                    const p = def.ports.find(p => p.id === wiring.fromPort);
+                                    return c.x + p.x;
+                                })(),
+                                (() => {
+                                    const c = components.find(c => c.id === wiring.fromComp);
+                                    const def = getComponentDef(c.type);
+                                    const p = def.ports.find(p => p.id === wiring.fromPort);
+                                    return c.y + p.y;
+                                })(),
+                                wiring.currX,
+                                wiring.currY
+                            )}
+                            stroke="#0ff" strokeWidth="2" strokeDasharray="5 5" fill="none"
+                            className="pointer-events-none"
+                        />
+                    )}
                 </g>
             </svg>
 

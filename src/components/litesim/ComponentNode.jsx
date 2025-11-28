@@ -29,10 +29,11 @@ const ComponentNode = ({ component, isSelected, onMouseDown }) => {
             {CompDef.ports.map(port => (
                 <circle
                     key={port.id}
-                    cx={port.x} cy={port.y} r="4"
-                    fill="transparent"
+                    cx={port.x} cy={port.y} r="6" // Larger hit area
+                    fill="white"
+                    fillOpacity="0"
                     stroke="transparent"
-                    className="hover:fill-white hover:stroke-cyan-500 cursor-crosshair"
+                    className="hover:fill-opacity-100 hover:fill-white hover:stroke-cyan-500 cursor-crosshair transition-all duration-200"
                     data-port-id={port.id}
                     data-comp-id={component.id}
                 />

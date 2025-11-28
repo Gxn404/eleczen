@@ -9,13 +9,51 @@ const Canvas = ({ settings }) => {
     const {
         components, wires, selection,
         addComponent, updateComponentPosition, addWire,
-        setSelection, removeSelection, runSimulation, clearCanvas
+        setSelection, removeSelection, runSimulation, clearCanvas,
+        exportRequest, resolveExport
     } = useLiteSimStore();
 
     const svgRef = useRef(null);
     const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
     const [drag, setDrag] = useState(null); // { type: 'pan' | 'comp', id, startX, startY, origX, origY }
     const [wiring, setWiring] = useState(null); // { fromComp, fromPort, currX, currY }
+
+    // Handle Export Requests
+    useEffect(() => {
+        if (exportRequest === 'PNG' && svgRef.current) {
+            const svgData = new XMLSerializer().serializeToString(svgRef.current);
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+
+            // Get SVG dimensions (or use viewbox/window size)
+            const width = svgRef.current.clientWidth || 1920;
+            const height = svgRef.current.clientHeight || 1080;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Add dark background
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(0, 0, width, height);
+
+            const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+            const url = URL.createObjectURL(svgBlob);
+
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+
+                const pngUrl = canvas.toDataURL("image/png");
+                const a = document.createElement('a');
+                a.href = pngUrl;
+                a.download = `circuit-${Date.now()}.png`;
+                a.click();
+                resolveExport();
+            };
+            img.src = url;
+        }
+    }, [exportRequest, resolveExport]);
 
     // Default settings if not provided
     const snapToGrid = settings?.snapToGrid ?? true;
@@ -172,14 +210,14 @@ const Canvas = ({ settings }) => {
 
     return (
         <div
-            className="w-full h-full bg-black overflow-hidden relative"
+            className="w-full h-full bg-gray-300/90 overflow-hidden relative"
             onDrop={handleDrop}
             onDragOver={e => e.preventDefault()}
         >
             {/* Grid Background (CSS pattern) */}
             <div className="absolute inset-0 pointer-events-none opacity-20"
                 style={{
-                    backgroundImage: 'radial-gradient(#333 1px, transparent 1px)',
+                    backgroundImage: 'radial-gradient(#333 1px, transparent 2px)',
                     backgroundSize: `${20 * view.zoom}px ${20 * view.zoom}px`,
                     backgroundPosition: `${view.x}px ${view.y}px`
                 }}
@@ -263,23 +301,6 @@ const Canvas = ({ settings }) => {
                     )}
                 </g>
             </svg>
-
-            {/* Controls Overlay */}
-            <div className="absolute bottom-4 right-4 flex gap-2">
-                <button className="bg-gray-800 text-white p-2 rounded hover:bg-gray-700" onClick={() => setView({ x: 0, y: 0, zoom: 1 })}>Reset View</button>
-                <button className="bg-gray-800 text-white p-2 rounded hover:bg-gray-700" onClick={clearCanvas}>Clear</button>
-                <button className="bg-cyan-900 text-cyan-100 p-2 rounded hover:bg-cyan-800" onClick={() => {
-                    // Export JSON
-                    const state = useLiteSimStore.getState();
-                    const data = JSON.stringify({ components: state.components, wires: state.wires }, null, 2);
-                    const blob = new Blob([data], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'circuit.json';
-                    a.click();
-                }}>Export JSON</button>
-            </div>
         </div>
     );
 };

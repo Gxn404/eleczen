@@ -5,7 +5,17 @@ import ComponentPanel from '../panels/ComponentPanel';
 import InspectorPanel from '../panels/InspectorPanel';
 import ConsolePanel from '../panels/ConsolePanel';
 import CanvasPanel from '../panels/CanvasPanel';
+import ModalManager from '../modals/ModalManager';
 import { usePreventDevTools } from '@/hooks/usePreventDevTools';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+
+const ResizeHandle = ({ className = "" }) => (
+    <PanelResizeHandle className={`w-1 bg-white/5 hover:bg-cyan-500/50 transition-colors data-[resize-handle-active]:bg-cyan-500 ${className}`} />
+);
+
+const ResizeHandleHorizontal = ({ className = "" }) => (
+    <PanelResizeHandle className={`h-1 bg-white/5 hover:bg-cyan-500/50 transition-colors data-[resize-handle-active]:bg-cyan-500 ${className}`} />
+);
 
 const Workbench = () => {
     usePreventDevTools();
@@ -19,32 +29,42 @@ const Workbench = () => {
 
             {/* Main Workspace Grid */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Left: Component Panel (Inventory) */}
-                <div className="w-64 border-r border-white/10 bg-white/5 backdrop-blur-md flex flex-col z-40 shadow-2xl">
-                    <ComponentPanel />
-                </div>
+                <PanelGroup direction="horizontal">
+                    {/* Left: Component Panel (Inventory) */}
+                    <Panel defaultSize={20} minSize={15} maxSize={30} className="flex flex-col border-r border-white/10 bg-white/5 backdrop-blur-md z-40 shadow-2xl">
+                        <ComponentPanel />
+                    </Panel>
 
-                {/* Center: Canvas & Console */}
-                <div className="flex-1 flex flex-col relative">
-                    {/* Canvas Area */}
-                    <div className="flex-1 bg-transparent relative overflow-hidden">
-                        <CanvasPanel />
-                    </div>
+                    <ResizeHandle />
 
-                    {/* Bottom: Console Panel */}
-                    <div className="h-48 border-t border-white/10 bg-black/40 backdrop-blur-xl z-40">
-                        <ConsolePanel />
-                    </div>
-                </div>
+                    {/* Center: Canvas & Console */}
+                    <Panel className="flex flex-col relative">
+                        <PanelGroup direction="vertical">
+                            {/* Canvas Area */}
+                            <Panel className="bg-transparent relative overflow-hidden">
+                                <CanvasPanel />
+                            </Panel>
 
-                {/* Right: Inspector Panel (Properties) */}
-                <div className="w-72 border-l border-white/10 bg-white/5 backdrop-blur-md flex flex-col z-40 shadow-2xl">
-                    <InspectorPanel />
-                </div>
+                            <ResizeHandleHorizontal />
+
+                            {/* Bottom: Console Panel */}
+                            <Panel defaultSize={20} minSize={16} maxSize={40} className="border-t border-white/10 bg-black/40 backdrop-blur-xl z-40">
+                                <ConsolePanel />
+                            </Panel>
+                        </PanelGroup>
+                    </Panel>
+
+                    <ResizeHandle />
+
+                    {/* Right: Inspector Panel (Properties) */}
+                    <Panel defaultSize={20} minSize={15} maxSize={30} className="flex flex-col border-l border-white/10 bg-white/5 backdrop-blur-md z-40 shadow-2xl">
+                        <InspectorPanel />
+                    </Panel>
+                </PanelGroup>
             </div>
 
-            {/* Modal Layer (Placeholder) */}
-            {/* <div className="absolute inset-0 pointer-events-none z-[100]"></div> */}
+            {/* Modal Layer */}
+            <ModalManager />
         </div>
     );
 };

@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { Play, Pause } from 'lucide-react';
 import { useLiteSimStore } from '@/lib/litesim/state';
 import { saveCircuitAction } from '@/app/actions/circuit';
 
 const NavbarPanel = () => {
-    const { isRunning, setIsRunning, runSimulation, clearCanvas, components, wires } = useLiteSimStore();
+    const { isRunning, setIsRunning, runSimulation, clearCanvas, components, wires, openModal, requestExport } = useLiteSimStore();
     const [activeMenu, setActiveMenu] = useState(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     // Simulation Loop
     useEffect(() => {
@@ -19,20 +19,8 @@ const NavbarPanel = () => {
         return () => clearInterval(interval);
     }, [isRunning, runSimulation]);
 
-    const handleSaveToCloud = async () => {
-        const name = prompt("Enter circuit name:", "My Circuit");
-        if (!name) return;
-
-        setIsSaving(true);
-        const data = { components, wires };
-        const result = await saveCircuitAction(name, data);
-        setIsSaving(false);
-
-        if (result.success) {
-            alert(`Circuit saved to Notion! ID: ${result.id}`);
-        } else {
-            alert(`Failed to save: ${result.error}`);
-        }
+    const handleSaveToCloud = () => {
+        openModal('SAVE_CIRCUIT');
         setActiveMenu(null);
     };
 
@@ -49,9 +37,7 @@ const NavbarPanel = () => {
     };
 
     const handleExportPNG = () => {
-        // Simple placeholder for PNG export - requires canvas access which is tricky from here
-        // For now, we'll just alert
-        alert("PNG Export requires canvas ref access. Coming soon!");
+        requestExport('PNG');
         setActiveMenu(null);
     };
 
@@ -70,8 +56,8 @@ const NavbarPanel = () => {
                         <div className="absolute top-full left-0 mt-1 w-48 bg-gray-900 border border-gray-700 rounded shadow-xl z-50 py-1">
                             <button className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white" onClick={clearCanvas}>New (Clear)</button>
                             <div className="border-t border-gray-800 my-1"></div>
-                            <button className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white" onClick={handleSaveToCloud} disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save to Cloud (Notion)'}
+                            <button className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white" onClick={handleSaveToCloud}>
+                                Save to Cloud (Notion)
                             </button>
                             <button className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white" onClick={handleExportJSON}>Export JSON</button>
                             <button className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white" onClick={handleExportPNG}>Export PNG</button>
@@ -117,11 +103,11 @@ const NavbarPanel = () => {
                 <button
                     onClick={() => setIsRunning(!isRunning)}
                     className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${isRunning
-                        ? 'bg-red-900/50 text-red-400 hover:bg-red-900/80 border border-red-900'
-                        : 'bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-500'
+                        ? 'bg-red-900/50 hover:bg-red-900/80 border border-red-400/50'
+                        : 'bg-cyan-500 hover:bg-cyan-600 text-white border border-cyan-500'
                         }`}
                 >
-                    {isRunning ? 'Stop Sim' : 'Run Sim'}
+                    {isRunning ? <Pause size={14} fill='#fff' />: <Play size={14} fill='#fff' />}
                 </button>
             </div>
         </div>

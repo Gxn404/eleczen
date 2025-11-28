@@ -122,7 +122,6 @@ export default function RootLayout({ children }) {
           <ToastProvider />
           <Navbar />
           <main className="pt-16 min-h-screen">{children}</main>
-          <Footer />
           <BottomNav />
         </Providers>
       </body>

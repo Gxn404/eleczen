@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function DesignPage() {
     return (
-        <main className="w-screen h-screen overflow-hidden bg-black text-white font-sans selection:bg-cyan-500/30">
+        <main className="w-screen h-155.5 overflow-hidden bg-black text-white font-sans selection:bg-cyan-500/30">
             <Workbench />
 
             {/* Branding Overlay */}

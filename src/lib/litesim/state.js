@@ -152,6 +152,13 @@ export const useLiteSimStore = create(
             },
 
             clearCanvas: () => set({ components: [], wires: [], selection: null }),
+
+            // Modal State
+            modal: { isOpen: false, type: null, data: null },
+            // Export State
+            exportRequest: null, // 'PNG', 'JSON', etc.
+            requestExport: (type) => set({ exportRequest: type }),
+            resolveExport: () => set({ exportRequest: null }),
         }),
         {
             name: 'eleczen-litesim-storage', // unique name

@@ -35,7 +35,7 @@ const ComponentPanel = () => {
                 />
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto no-scrollbar p-2">
                 {categories.map(cat => (
                     <div key={cat} className="mb-4">
                         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-2">{cat}</h3>

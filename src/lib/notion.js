@@ -63,18 +63,12 @@ export const getPublishedPosts = async () => {
     try {
         const response = await notion.databases.query({
             database_id: process.env.NOTION_DATABASE_ID,
-            // Removed specific filter to be more generic or assume the user's DB matches
-            // If this is a new DB, it might not have "Published" property.
-            // Let's keep it safe and just query everything for now, or check if we should filter.
-            // Given the user gave a new DB ID, let's assume it might be empty or different.
-            // For safety, I'll comment out the filter for now or make it optional.
         });
 
         return response.results.map((post) => {
             return {
                 _id: post.id,
                 title: post.properties.Name?.title[0]?.plain_text || "Untitled",
-                // Handle missing properties gracefully
                 createdAt: post.created_time,
                 updatedAt: post.last_edited_time,
             };
@@ -82,5 +76,49 @@ export const getPublishedPosts = async () => {
     } catch (error) {
         console.error("Error fetching Notion posts:", error);
         return [];
+    }
+};
+
+export const getPostBySlug = async (slug) => {
+    if (!process.env.NOTION_DATABASE_ID) {
+        throw new Error("NOTION_DATABASE_ID is not defined");
+    }
+
+    try {
+        const response = await notion.databases.query({
+            database_id: process.env.NOTION_DATABASE_ID,
+            filter: {
+                property: "Slug",
+                rich_text: {
+                    equals: slug,
+                },
+            },
+        });
+
+        if (!response.results.length) {
+            return null;
+        }
+
+        const page = response.results[0];
+        const mdblocks = await n2m.pageToMarkdown(page.id);
+        const mdString = n2m.toMarkdownString(mdblocks);
+
+        return {
+            _id: page.id,
+            title: page.properties.Name?.title[0]?.plain_text || "Untitled",
+            slug: page.properties.Slug?.rich_text[0]?.plain_text || slug,
+            createdAt: page.created_time,
+            updatedAt: page.last_edited_time,
+            content: mdString.parent,
+            coverImage: page.cover?.external?.url || page.cover?.file?.url || null,
+            tags: page.properties.Tags?.multi_select?.map((tag) => tag.name) || [],
+            author: {
+                name: "ElecZen Author",
+                image: null,
+            },
+        };
+    } catch (error) {
+        console.error(`Error fetching post by slug ${slug}:`, error);
+        return null;
     }
 };

@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Providers from "@/components/Providers";
@@ -6,13 +6,13 @@ import ToastProvider from "@/components/ToastProvider";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-geist-sans", // Keeping the variable name to avoid breaking css
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const robotoMono = Roboto_Mono({
+  variable: "--font-geist-mono", // Keeping the variable name to avoid breaking css
   subsets: ["latin"],
 });
 
@@ -110,7 +110,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-black text-white selection:bg-neon-blue/30 relative`}
+        className={`${inter.variable} ${robotoMono.variable} antialiased min-h-screen bg-black text-white selection:bg-neon-blue/30 relative`}
       >
         {/* Background Grid Effect */}
         <div

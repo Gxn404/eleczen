@@ -35,6 +35,7 @@
         "rehype-highlight": "^7.0.2",
         "remark-gfm": "^4.0.1",
         "resend": "^6.5.2",
+        "spicejs": "^0.0.1",
         "tailwind-merge": "^3.4.0",
         "tesseract.js": "^6.0.1",
         "zustand": "^5.0.8",
@@ -1879,6 +1880,8 @@
     "space-separated-tokens": ["space-separated-tokens@2.0.2", "", {}, "sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q=="],
 
     "sparse-bitfield": ["sparse-bitfield@3.0.3", "", { "dependencies": { "memory-pager": "^1.0.2" } }, "sha512-kvzhi7vqKTfkh0PZU+2D2PIllw2ymqJKujUcyPMd9Y75Nv4nPbGJZXNhxsgdQab2BmlDct1YnfQCguEvHr7VsQ=="],
+
+    "spicejs": ["spicejs@0.0.1", "", {}, "sha512-2UWc8lOXdLpsk1qoVtI/mPZdyXFWwPsP5m4Omh5s75OEsRCGl8l2NzEAtaL3zm5ISF3RTs7bU8I9h8QGN2bRmA=="],
 
     "stack-trace": ["stack-trace@0.0.9", "", {}, "sha512-vjUc6sfgtgY0dxCdnc40mK6Oftjo9+2K8H/NG81TMhgL392FtiPA9tn9RLyTxXmTLPJPjF3VyzFp6bsWFLisMQ=="],
 

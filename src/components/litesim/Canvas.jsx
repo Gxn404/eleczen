@@ -8,14 +8,14 @@ import { getComponentDef } from './parts';
 const Canvas = ({ settings }) => {
     const {
         components, wires, selection,
-        addComponent, updateComponentPosition, addWire,
+        addComponent, updateComponentPosition, addWire, updateWirePoints,
         setSelection, removeSelection, runSimulation, clearCanvas,
         exportRequest, resolveExport
     } = useLiteSimStore();
 
     const svgRef = useRef(null);
     const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
-    const [drag, setDrag] = useState(null); // { type: 'pan' | 'comp', id, startX, startY, origX, origY }
+    const [drag, setDrag] = useState(null); // { type: 'pan' | 'comp' | 'handle', id, index, startX, startY, origX, origY }
     const [wiring, setWiring] = useState(null); // { fromComp, fromPort, currX, currY }
 
     // Handle Export Requests
@@ -89,9 +89,176 @@ const Canvas = ({ settings }) => {
         };
     };
 
+    // A* Pathfinding
+    const findPath = (start, end, wireId = null) => {
+        const gridSize = 20; // Match grid size
+        const snap = (val) => Math.round(val / gridSize) * gridSize;
+
+        const startNode = { x: snap(start.x), y: snap(start.y) };
+        const endNode = { x: snap(end.x), y: snap(end.y) };
+
+        // Optimization: If straight line is clear, use it
+        // (Skipped for now to ensure grid alignment)
+
+        const openList = [{ ...startNode, g: 0, h: 0, f: 0, parent: null }];
+        const closedList = new Set();
+        const closedKey = (n) => `${n.x},${n.y}`;
+
+        // Heuristic (Manhattan)
+        const getH = (n) => Math.abs(n.x - endNode.x) + Math.abs(n.y - endNode.y);
+
+        // Obstacle check
+        const isBlocked = (x, y) => {
+            // Allow start and end points (ports)
+            if ((Math.abs(x - startNode.x) < 1 && Math.abs(y - startNode.y) < 1) ||
+                (Math.abs(x - endNode.x) < 1 && Math.abs(y - endNode.y) < 1)) return false;
+
+            // Component Obstacles
+            for (const comp of components) {
+                const def = getComponentDef(comp.type);
+                const w = (comp.width || def?.defaultSize?.width || 40);
+                const h = (comp.height || def?.defaultSize?.height || 40);
+                const padding = 10; // Clearance
+                if (x >= comp.x - w / 2 - padding && x <= comp.x + w / 2 + padding &&
+                    y >= comp.y - h / 2 - padding && y <= comp.y + h / 2 + padding) {
+                    return true;
+                }
+            }
+
+            // Wire Obstacles (prevent overlap)
+            // Check against all OTHER wires
+            // This is expensive, so we might limit it or use a spatial grid in a real app
+            // For now, we'll just check segment intersections if we want strict non-overlap,
+            // but for A* grid nodes, we just check if a node is ON another wire.
+            // Simplified: Don't route ON TOP of existing wire segments.
+            for (const w of wires) {
+                if (w.id === wireId) continue; // Don't block self
+                if (!w.points) continue; // Skip uncalculated wires (or handle them)
+
+                // Check if (x,y) is on any segment of w.points
+                for (let i = 0; i < w.points.length - 1; i++) {
+                    const p1 = w.points[i];
+                    const p2 = w.points[i + 1];
+                    // Horizontal segment
+                    if (Math.abs(p1.y - p2.y) < 1 && Math.abs(p1.y - y) < 1) {
+                        if (x >= Math.min(p1.x, p2.x) && x <= Math.max(p1.x, p2.x)) return true;
+                    }
+                    // Vertical segment
+                    if (Math.abs(p1.x - p2.x) < 1 && Math.abs(p1.x - x) < 1) {
+                        if (y >= Math.min(p1.y, p2.y) && y <= Math.max(p1.y, p2.y)) return true;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        let iterations = 0;
+        const maxIterations = 1000; // Increased for complex routes
+
+        while (openList.length > 0 && iterations < maxIterations) {
+            iterations++;
+
+            // Get node with lowest f
+            let lowInd = 0;
+            for (let i = 0; i < openList.length; i++) {
+                if (openList[i].f < openList[lowInd].f) { lowInd = i; }
+            }
+            let currentNode = openList[lowInd];
+
+            // End case
+            if (Math.abs(currentNode.x - endNode.x) < gridSize && Math.abs(currentNode.y - endNode.y) < gridSize) {
+                let curr = currentNode;
+                const path = [];
+                while (curr.parent) {
+                    path.push({ x: curr.x, y: curr.y });
+                    curr = curr.parent;
+                }
+                path.push({ x: startNode.x, y: startNode.y });
+                const fullPath = path.reverse().concat([{ x: endNode.x, y: endNode.y }]);
+
+                // Simplify Path (Keep only corners)
+                if (fullPath.length < 3) return fullPath;
+
+                const simplified = [fullPath[0]];
+                for (let i = 1; i < fullPath.length - 1; i++) {
+                    const prev = fullPath[i - 1];
+                    const curr = fullPath[i];
+                    const next = fullPath[i + 1];
+
+                    // If direction changes, keep the point
+                    const dx1 = curr.x - prev.x;
+                    const dy1 = curr.y - prev.y;
+                    const dx2 = next.x - curr.x;
+                    const dy2 = next.y - curr.y;
+
+                    if (Math.sign(dx1) !== Math.sign(dx2) || Math.sign(dy1) !== Math.sign(dy2)) {
+                        simplified.push(curr);
+                    }
+                }
+                simplified.push(fullPath[fullPath.length - 1]);
+                return simplified;
+            }
+
+            // Move current from open to closed
+            openList.splice(lowInd, 1);
+            closedList.add(closedKey(currentNode));
+
+            // Neighbors (Up, Down, Left, Right)
+            const neighbors = [
+                { x: currentNode.x + gridSize, y: currentNode.y },
+                { x: currentNode.x - gridSize, y: currentNode.y },
+                { x: currentNode.x, y: currentNode.y + gridSize },
+                { x: currentNode.x, y: currentNode.y - gridSize }
+            ];
+
+            for (let neighbor of neighbors) {
+                if (closedList.has(closedKey(neighbor)) || isBlocked(neighbor.x, neighbor.y)) {
+                    continue;
+                }
+
+                let gScore = currentNode.g + gridSize;
+                let neighborNode = openList.find(n => n.x === neighbor.x && n.y === neighbor.y);
+
+                if (!neighborNode) {
+                    neighborNode = { ...neighbor, g: gScore, h: getH(neighbor), f: 0, parent: currentNode };
+                    neighborNode.f = neighborNode.g + neighborNode.h;
+                    openList.push(neighborNode);
+                } else if (gScore < neighborNode.g) {
+                    neighborNode.g = gScore;
+                    neighborNode.parent = currentNode;
+                    neighborNode.f = neighborNode.g + neighborNode.h;
+                }
+            }
+        }
+
+        // Fallback: Orthogonal path
+        const midX = (start.x + end.x) / 2;
+        return [
+            { x: start.x, y: start.y },
+            { x: midX, y: start.y },
+            { x: midX, y: end.y },
+            { x: end.x, y: end.y }
+        ];
+    };
+
+    // Helper to convert path points to SVG d string
+    const getPathString = (points) => {
+        if (!points || points.length === 0) return "";
+        let d = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 1; i < points.length; i++) {
+            d += ` L ${points[i].x} ${points[i].y}`;
+        }
+        return d;
+    };
+
     const handleMouseDown = (e) => {
         // Pan start (Background click)
         setDrag({ type: 'pan', startX: e.clientX, startY: e.clientY, origX: view.x, origY: view.y });
+        // Deselect if clicking background
+        if (e.target.tagName === 'svg') {
+            setSelection(null);
+        }
     };
 
     const handleCompMouseDown = (e, id) => {
@@ -109,6 +276,75 @@ const Canvas = ({ settings }) => {
         const comp = components.find(c => c.id === id);
         setSelection('component', id);
         setDrag({ type: 'comp', id, startX: pt.x, startY: pt.y, origX: comp.x, origY: comp.y });
+    };
+
+    // Helper: Distance from point p to line segment v-w
+    const distanceToSegment = (p, v, w) => {
+        const l2 = (v.x - w.x) ** 2 + (v.y - w.y) ** 2;
+        if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+        let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+    };
+
+    const handleHandleDoubleClick = (e, wireId, index) => {
+        e.stopPropagation();
+        const wire = wires.find(w => w.id === wireId);
+        if (!wire || !wire.points) return;
+
+        const newPoints = [...wire.points];
+        newPoints.splice(index, 1);
+        updateWirePoints(wireId, newPoints);
+    };
+
+    const handleWireDoubleClick = (e, wireId) => {
+        e.stopPropagation();
+        const pt = screenToWorld(e.clientX, e.clientY);
+        const wire = wires.find(w => w.id === wireId);
+        if (!wire || !wire.points) return;
+
+        let minDist = Infinity;
+        let insertIndex = -1;
+        let newPoint = { x: pt.x, y: pt.y };
+
+        if (snapToGrid) {
+            newPoint.x = Math.round(newPoint.x / 20) * 20;
+            newPoint.y = Math.round(newPoint.y / 20) * 20;
+        }
+
+        for (let i = 0; i < wire.points.length - 1; i++) {
+            const p1 = wire.points[i];
+            const p2 = wire.points[i + 1];
+            const dist = distanceToSegment(pt, p1, p2);
+            if (dist < minDist) {
+                minDist = dist;
+                insertIndex = i + 1;
+            }
+        }
+
+        // Threshold to ensure we are clicking near the wire (e.g. 20px)
+        if (insertIndex !== -1 && minDist < 20) {
+            const newPoints = [...wire.points];
+            newPoints.splice(insertIndex, 0, newPoint);
+            updateWirePoints(wireId, newPoints);
+        }
+    };
+
+    const handleHandleMouseDown = (e, wireId, index) => {
+        e.stopPropagation();
+        const pt = screenToWorld(e.clientX, e.clientY);
+        const wire = wires.find(w => w.id === wireId);
+        if (!wire || !wire.points) return;
+
+        setDrag({
+            type: 'handle',
+            id: wireId,
+            index,
+            startX: pt.x,
+            startY: pt.y,
+            origX: wire.points[index].x,
+            origY: wire.points[index].y
+        });
     };
 
     const handleMouseMove = (e) => {
@@ -161,10 +397,60 @@ const Canvas = ({ settings }) => {
             }
 
             updateComponentPosition(drag.id, newX, newY);
+        } else if (drag.type === 'handle') {
+            const pt = screenToWorld(e.clientX, e.clientY);
+            const dx = pt.x - drag.startX;
+            const dy = pt.y - drag.startY;
+            let newX = drag.origX + dx;
+            let newY = drag.origY + dy;
+
+            if (snapToGrid) {
+                newX = Math.round(newX / 20) * 20; // Snap handles to grid
+                newY = Math.round(newY / 20) * 20;
+            }
+
+            const wire = wires.find(w => w.id === drag.id);
+            if (wire && wire.points) {
+                const newPoints = [...wire.points];
+                newPoints[drag.index] = { x: newX, y: newY };
+                updateWirePoints(drag.id, newPoints);
+            }
         }
     };
 
     const handleMouseUp = (e) => {
+        // Update connected wires if component was moved
+        if (drag && drag.type === 'comp') {
+            const comp = components.find(c => c.id === drag.id);
+            if (comp) {
+                const def = getComponentDef(comp.type);
+                wires.forEach(w => {
+                    if (!w.points) return;
+                    let newPoints = [...w.points];
+                    let changed = false;
+
+                    if (w.fromComp === comp.id) {
+                        const port = def.ports.find(p => p.id === w.fromPort);
+                        if (port) {
+                            newPoints[0] = { x: comp.x + port.x, y: comp.y + port.y };
+                            changed = true;
+                        }
+                    }
+                    if (w.toComp === comp.id) {
+                        const port = def.ports.find(p => p.id === w.toPort);
+                        if (port) {
+                            newPoints[newPoints.length - 1] = { x: comp.x + port.x, y: comp.y + port.y };
+                            changed = true;
+                        }
+                    }
+
+                    if (changed) {
+                        updateWirePoints(w.id, newPoints);
+                    }
+                });
+            }
+        }
+
         if (wiring) {
             const target = document.elementFromPoint(e.clientX, e.clientY);
             if (target && target.dataset.portId) {
@@ -202,22 +488,16 @@ const Canvas = ({ settings }) => {
         }
     };
 
-    // Helper for orthogonal path
-    const getWirePath = (x1, y1, x2, y2) => {
-        const midX = (x1 + x2) / 2;
-        return `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`;
-    };
-
     return (
         <div
-            className="w-full h-full bg-gray-300/90 overflow-hidden relative"
+            className="w-full h-full bg-gray-900 overflow-hidden relative"
             onDrop={handleDrop}
             onDragOver={e => e.preventDefault()}
         >
-            {/* Grid Background (CSS pattern) */}
+            {/* Grid Background */}
             <div className="absolute inset-0 pointer-events-none opacity-20"
                 style={{
-                    backgroundImage: 'radial-gradient(#333 1px, transparent 2px)',
+                    backgroundImage: 'linear-gradient(#999 1px, transparent 1px), linear-gradient(90deg, #999 1px, transparent 1px)',
                     backgroundSize: `${20 * view.zoom}px ${20 * view.zoom}px`,
                     backgroundPosition: `${view.x}px ${view.y}px`
                 }}
@@ -230,7 +510,7 @@ const Canvas = ({ settings }) => {
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onWheel={handleWheel}
-                viewBox={`0 0 ${1000} ${1000}`} // ViewBox is tricky with pan/zoom, better to use transform group
+                viewBox={`0 0 ${1000} ${1000}`}
             >
                 <g transform={`translate(${view.x}, ${view.y}) scale(${view.zoom})`}>
                     {/* Wires */}
@@ -244,23 +524,69 @@ const Canvas = ({ settings }) => {
                         const p1 = def1.ports.find(p => p.id === wire.fromPort);
                         const p2 = def2.ports.find(p => p.id === wire.toPort);
 
-                        // Transform local port coords to world
                         const w1 = { x: c1.x + p1.x, y: c1.y + p1.y };
                         const w2 = { x: c2.x + p2.x, y: c2.y + p2.y };
 
+                        // Use existing points or calculate new path
+                        let points = wire.points ? [...wire.points] : null;
+                        if (!points) {
+                            points = findPath(w1, w2, wire.id);
+                            // Update store with calculated points so they persist/can be edited
+                            // Note: Calling setState in render is bad. 
+                            // Better to just use them for render, and only save on drag end or creation.
+                            // For now, we'll just render them.
+                        } else {
+                            // Ensure endpoints match current component positions (if moved)
+                            // This is tricky. If we want wires to "follow", we need to re-route or stretch.
+                            // Simple approach: Update start/end points of the array.
+                            if (points.length > 0) {
+                                points[0] = w1;
+                                points[points.length - 1] = w2;
+                            }
+                        }
+
+                        const pathString = getPathString(points);
+                        const isSelected = selection?.type === 'wire' && selection?.id === wire.id;
+
                         return (
-                            <Wire
-                                key={wire.id}
-                                wire={wire}
-                                fromPos={w1}
-                                toPos={w2}
-                                active={false}
-                                isSelected={selection?.type === 'wire' && selection?.id === wire.id}
-                                onMouseDown={(e) => {
-                                    e.stopPropagation();
-                                    setSelection('wire', wire.id);
-                                }}
-                            />
+                            <g key={wire.id}>
+                                <Wire
+                                    wire={wire}
+                                    fromPos={w1}
+                                    toPos={w2}
+                                    path={pathString}
+                                    active={false}
+                                    isSelected={isSelected}
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        setSelection('wire', wire.id);
+                                        // If wire has no points yet, save the current calculated path so it becomes editable
+                                        if (!wire.points) {
+                                            updateWirePoints(wire.id, points);
+                                        }
+                                    }}
+                                    onDoubleClick={(e) => handleWireDoubleClick(e, wire.id)}
+                                />
+                                {/* Render Handles if Selected */}
+                                {isSelected && points && points.map((pt, i) => {
+                                    // Don't show handles for start/end (they are attached to ports)
+                                    if (i === 0 || i === points.length - 1) return null;
+                                    return (
+                                        <circle
+                                            key={i}
+                                            cx={pt.x}
+                                            cy={pt.y}
+                                            r={4 / view.zoom}
+                                            fill="#0ff"
+                                            stroke="#000"
+                                            strokeWidth={1 / view.zoom}
+                                            className="cursor-pointer hover:r-6 transition-all"
+                                            onMouseDown={(e) => handleHandleMouseDown(e, wire.id, i)}
+                                            onDoubleClick={(e) => handleHandleDoubleClick(e, wire.id, i)}
+                                        />
+                                    );
+                                })}
+                            </g>
                         );
                     })}
 
@@ -278,23 +604,15 @@ const Canvas = ({ settings }) => {
                     {/* Wiring Line */}
                     {wiring && (
                         <path
-                            d={getWirePath(
-                                // Start
+                            d={getPathString(findPath(
                                 (() => {
                                     const c = components.find(c => c.id === wiring.fromComp);
                                     const def = getComponentDef(c.type);
                                     const p = def.ports.find(p => p.id === wiring.fromPort);
-                                    return c.x + p.x;
+                                    return { x: c.x + p.x, y: c.y + p.y };
                                 })(),
-                                (() => {
-                                    const c = components.find(c => c.id === wiring.fromComp);
-                                    const def = getComponentDef(c.type);
-                                    const p = def.ports.find(p => p.id === wiring.fromPort);
-                                    return c.y + p.y;
-                                })(),
-                                wiring.currX,
-                                wiring.currY
-                            )}
+                                { x: wiring.currX, y: wiring.currY }
+                            ))}
                             stroke="#0ff" strokeWidth="2" strokeDasharray="5 5" fill="none"
                             className="pointer-events-none"
                         />

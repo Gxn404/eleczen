@@ -1,12 +1,17 @@
 import React from 'react';
 
-const Wire = ({ wire, fromPos, toPos, active, isSelected, onMouseDown }) => {
-    // Orthogonal routing
+const Wire = ({ wire, fromPos, toPos, path: customPath, active, isSelected, onMouseDown, onDoubleClick }) => {
+    // Orthogonal routing fallback
     const midX = (fromPos.x + toPos.x) / 2;
-    const path = `M ${fromPos.x} ${fromPos.y} L ${midX} ${fromPos.y} L ${midX} ${toPos.y} L ${toPos.x} ${toPos.y}`;
+    const defaultPath = `M ${fromPos.x} ${fromPos.y} L ${midX} ${fromPos.y} L ${midX} ${toPos.y} L ${toPos.x} ${toPos.y}`;
+    const path = customPath || defaultPath;
 
     return (
-        <g onMouseDown={(e) => { e.stopPropagation(); onMouseDown && onMouseDown(e, wire.id); }} style={{ cursor: 'pointer' }}>
+        <g
+            onMouseDown={(e) => { e.stopPropagation(); onMouseDown && onMouseDown(e, wire.id); }}
+            onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick && onDoubleClick(e, wire.id); }}
+            style={{ cursor: 'pointer' }}
+        >
             {/* Hit area (thicker invisible line) */}
             <path d={path} stroke="transparent" strokeWidth="15" fill="none" />
 

@@ -1,148 +1,166 @@
-import { ArrowRight, BookOpen, Cpu, Layers, Zap } from "lucide-react";
 import Link from "next/link";
-import JsonLd from "@/components/JsonLd";
+import {
+    Plus,
+    Search,
+    Zap,
+    BookOpen,
+    Cpu,
+    ArrowRight,
+    Activity,
+    Grid
+} from "lucide-react";
 
-export default function Home() {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebSite",
-        "name": "ElecZen",
-        "url": "https://eleczen.app",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://eleczen.app/encyclopedia?search={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      },
-      {
-        "@type": "Organization",
-        "name": "ElecZen",
-        "url": "https://eleczen.app",
-        "logo": "https://eleczen.app/eleczen_512.png",
-        "sameAs": [
-          "https://twitter.com/eleczen",
-          "https://github.com/eleczen"
-        ]
-      }
-    ]
-  };
+export default function Dashboard() {
+    return (
+        <div className="min-h-screen p-6 md:p-8 max-w-7xl mx-auto">
+            {/* Welcome Section */}
+            <div className="mb-10">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                    Welcome back, <span className="text-neon-blue">Engineer</span>
+                </h1>
+                <p className="text-gray-400">
+                    Ready to design your next breakthrough?
+                </p>
+            </div>
 
-  return (
-    <div className="flex flex-col min-h-screen">
-      <JsonLd data={jsonLd} />
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-black pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-neon-blue/20 rounded-full blur-[120px] opacity-50 animate-pulse-slow" />
-          <div className="absolute bottom-0 right-0 w-[800px] h-[600px] bg-neon-purple/10 rounded-full blur-[100px] opacity-30" />
-          <div className="absolute top-1/3 left-10 w-64 h-64 bg-neon-green/10 rounded-full blur-[80px] opacity-20" />
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <Link href="/design/circuit/new" className="group">
+                    <div className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-blue/50 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col items-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-neon-blue/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <Plus className="w-6 h-6 text-neon-blue" />
+                        </div>
+                        <h3 className="font-bold text-white mb-1">New Circuit</h3>
+                        <p className="text-sm text-gray-400">Start a blank design</p>
+                    </div>
+                </Link>
+
+                <Link href="/tools/scanner" className="group">
+                    <div className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-pink/50 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col items-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-neon-pink/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <CameraIcon className="w-6 h-6 text-neon-pink" />
+                        </div>
+                        <h3 className="font-bold text-white mb-1">Scan Component</h3>
+                        <p className="text-sm text-gray-400">Identify with AI</p>
+                    </div>
+                </Link>
+
+                <Link href="/encyclopedia" className="group">
+                    <div className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-green/50 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col items-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-neon-green/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <Search className="w-6 h-6 text-neon-green" />
+                        </div>
+                        <h3 className="font-bold text-white mb-1">Encyclopedia</h3>
+                        <p className="text-sm text-gray-400">Find datasheets</p>
+                    </div>
+                </Link>
+
+                <Link href="/projects" className="group">
+                    <div className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-purple/50 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col items-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-neon-purple/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <Grid className="w-6 h-6 text-neon-purple" />
+                        </div>
+                        <h3 className="font-bold text-white mb-1">Community</h3>
+                        <p className="text-sm text-gray-400">Explore projects</p>
+                    </div>
+                </Link>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Recent Activity / Continue Working */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Activity className="w-5 h-5 text-neon-blue" />
+                            Recent Activity
+                        </h2>
+                        <Link href="/profile" className="text-sm text-neon-blue hover:text-white transition-colors">
+                            View all
+                        </Link>
+                    </div>
+
+                    {/* Placeholder for Recent Circuits */}
+                    <div className="glass-panel rounded-2xl p-8 border border-white/5 text-center">
+                        <div className="w-16 h-16 mx-auto bg-white/5 rounded-full flex items-center justify-center mb-4">
+                            <Zap className="w-8 h-8 text-gray-500" />
+                        </div>
+                        <h3 className="text-lg font-medium text-white mb-2">No recent circuits</h3>
+                        <p className="text-gray-400 mb-6">Start your first project today!</p>
+                        <Link href="/design/circuit/new">
+                            <button className="px-6 py-2 rounded-lg bg-neon-blue/20 text-neon-blue border border-neon-blue/30 hover:bg-neon-blue/30 transition-all">
+                                Create Circuit
+                            </button>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Sidebar: Featured / Tool of the Day */}
+                <div className="space-y-8">
+                    {/* Tool of the Day */}
+                    <div className="glass-panel rounded-2xl p-6 border border-white/10 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <Cpu className="w-32 h-32 text-neon-purple" />
+                        </div>
+                        <h3 className="text-sm font-bold text-neon-purple uppercase tracking-wider mb-2">
+                            Tool of the Day
+                        </h3>
+                        <h2 className="text-2xl font-bold text-white mb-2">
+                            Resistor Decoder
+                        </h2>
+                        <p className="text-gray-400 mb-6 text-sm">
+                            Quickly calculate resistance values from color bands. Supports 4, 5, and 6 band resistors.
+                        </p>
+                        <Link href="/tools/resistor">
+                            <button className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-neon-purple/50 text-white transition-all flex items-center justify-center gap-2">
+                                Try Now <ArrowRight className="w-4 h-4" />
+                            </button>
+                        </Link>
+                    </div>
+
+                    {/* Latest from Blog */}
+                    <div>
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <BookOpen className="w-5 h-5 text-neon-pink" />
+                            Latest Insights
+                        </h2>
+                        <div className="space-y-4">
+                            {[1, 2].map((i) => (
+                                <div key={i} className="glass-panel p-4 rounded-xl border border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
+                                    <div className="flex gap-4">
+                                        <div className="w-16 h-16 rounded-lg bg-gray-800 flex-shrink-0" />
+                                        <div>
+                                            <h4 className="font-bold text-white text-sm mb-1 line-clamp-2">
+                                                Understanding MOSFETs in Power Electronics
+                                            </h4>
+                                            <p className="text-xs text-gray-500">Nov 28 • 5 min read</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+    );
+}
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md animate-fade-in-up hover:bg-white/10 transition-colors cursor-default">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-green opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-green"></span>
-            </span>
-            <span className="text-sm text-gray-300 font-medium">v2.0 Now Available</span>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight leading-tight animate-fade-in-up delay-100">
-            The Future of <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink animate-gradient-x neon-text-subtle">
-              Circuit Design
-            </span>
-          </h1>
-
-          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up delay-200">
-            Design, simulate, and share electronic circuits in real-time. Access
-            a massive component encyclopedia and learn from community experts.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-300">
-            <Link href="/design/circuit">
-              <button className="px-8 py-4 rounded-xl bg-neon-blue text-black font-bold text-lg hover:bg-white transition-all shadow-[0_0_20px_rgba(0,243,255,0.4)] hover:shadow-[0_0_30px_rgba(0,243,255,0.6)] flex items-center gap-2 group">
-                Start Designing <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </Link>
-            <Link href="/encyclopedia">
-              <button className="px-8 py-4 rounded-xl bg-white/5 text-white font-bold text-lg border border-white/10 hover:bg-white/10 hover:border-neon-purple/50 transition-all backdrop-blur-md">
-                Browse Components
-              </button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-24 bg-black/50 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Link href="/design/circuit" className="glass-panel p-8 rounded-2xl border border-white/10 hover:border-neon-blue/50 transition-all duration-300 group hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(0,243,255,0.2)]">
-              <div className="w-14 h-14 rounded-xl bg-neon-blue/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-neon-blue/20">
-                <Zap className="w-8 h-8 text-neon-blue" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-neon-blue transition-colors">
-                Real-time Simulation
-              </h3>
-              <p className="text-gray-400 leading-relaxed">
-                Test your circuits instantly with our advanced SPICE-based
-                simulation engine. Visualize voltage and current flow in
-                real-time.
-              </p>
-            </Link>
-
-            <Link href="/encyclopedia" className="glass-panel p-8 rounded-2xl border border-white/10 hover:border-neon-purple/50 transition-all duration-300 group hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(188,19,254,0.2)]">
-              <div className="w-14 h-14 rounded-xl bg-neon-purple/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-neon-purple/20">
-                <Cpu className="w-8 h-8 text-neon-purple" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-neon-purple transition-colors">
-                Component Encyclopedia
-              </h3>
-              <p className="text-gray-400 leading-relaxed">
-                Access detailed specifications, pinouts, and models for
-                thousands of electronic components. Never check a datasheet
-                again.
-              </p>
-            </Link>
-
-            <Link href="/blog" className="glass-panel p-8 rounded-2xl border border-white/10 hover:border-neon-pink/50 transition-all duration-300 group hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(255,0,255,0.2)]">
-              <div className="w-14 h-14 rounded-xl bg-neon-pink/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-neon-pink/20">
-                <BookOpen className="w-8 h-8 text-neon-pink" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-neon-pink transition-colors">
-                Community Blog
-              </h3>
-              <p className="text-gray-400 leading-relaxed">
-                Learn from the best. Read tutorials, project breakdowns, and
-                deep dives into electronics theory from community experts.
-              </p>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-black to-gray-900" />
-        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-8">
-            Ready to build the impossible?
-          </h2>
-          <p className="text-xl text-gray-400 mb-10">
-            Join thousands of engineers, students, and hobbyists creating the
-            next generation of electronics.
-          </p>
-          <Link href="/login">
-            <button className="px-10 py-5 rounded-full bg-white text-black font-bold text-xl hover:bg-gray-200 transition-all shadow-xl hover:scale-105 transform duration-200">
-              Join ElecZen Free
-            </button>
-          </Link>
-        </div>
-      </section>
-    </div>
-  );
+function CameraIcon(props) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+            <circle cx="12" cy="13" r="3" />
+        </svg>
+    )
 }

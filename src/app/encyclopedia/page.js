@@ -45,25 +45,38 @@ export default function EncyclopediaListing() {
     <div className="min-h-screen p-8 max-w-7xl mx-auto">
       <Breadcrumbs className="mb-6" />
       <div className="text-center mb-16">
-        <h1 className="text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue neon-text">
+        <h1 className="text-5xl md:text-7xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-blue neon-text tracking-tight">
           Component Encyclopedia
         </h1>
-        <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-8">
+        <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
           The comprehensive database of electronic components, symbols, and
           specifications.
         </p>
 
-        <div className="relative max-w-xl mx-auto">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+        <div className="relative max-w-2xl mx-auto mb-8">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-6 w-6 text-gray-400" />
           </div>
           <input
             type="text"
-            className="block w-full pl-10 pr-3 py-4 border border-white/10 rounded-xl leading-5 bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:ring-1 focus:ring-neon-green focus:border-neon-green sm:text-sm transition-all duration-300 backdrop-blur-md shadow-lg"
+            className="block w-full pl-12 pr-4 py-5 border border-white/10 rounded-2xl leading-5 bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:bg-white/10 focus:ring-2 focus:ring-neon-green focus:border-transparent sm:text-lg transition-all duration-300 backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.3)]"
             placeholder="Search for components (e.g., Resistor, 555 Timer)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-3 text-sm text-gray-400">
+          <span>Trending:</span>
+          {["555 Timer", "Arduino Uno", "ESP32", "LM358", "10k Resistor"].map((term) => (
+            <button
+              key={term}
+              onClick={() => setSearchTerm(term)}
+              className="hover:text-neon-green transition-colors underline decoration-dotted underline-offset-4"
+            >
+              {term}
+            </button>
+          ))}
         </div>
       </div>
 

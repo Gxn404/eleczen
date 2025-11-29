@@ -8,6 +8,7 @@ import {
   Grid,
   Battery,
   Radio,
+  ArrowRight,
 } from "lucide-react";
 
 const tools = [
@@ -102,39 +103,46 @@ export default function ToolsPage() {
           </p>
         </div>
 
-        <div className="space-y-16">
+        <div className="space-y-20">
           {tools.map((section) => (
             <div key={section.category}>
-              <h2 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
+              <h2 className="text-3xl font-bold text-white mb-10 flex items-center gap-4">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                <span>{section.category}</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+                  {section.category}
+                </span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {section.items.map((tool) => (
-                  <Link href={tool.href} key={tool.name} className="group">
+                  <Link href={tool.href} key={tool.name} className="group block h-full">
                     <div
-                      className={`h-full glass-panel rounded-2xl p-6 border ${tool.border} hover:scale-[1.02] transition-all duration-300 relative overflow-hidden`}
+                      className={`h-full glass-panel rounded-3xl p-8 border ${tool.border} hover:scale-[1.02] transition-all duration-300 relative overflow-hidden flex flex-col`}
                     >
                       <div
-                        className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}
+                        className={`absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-15 transition-opacity transform group-hover:scale-110 duration-500`}
                       >
-                        <tool.icon className={`w-24 h-24 ${tool.color}`} />
+                        <tool.icon className={`w-32 h-32 ${tool.color}`} />
                       </div>
 
                       <div
-                        className={`w-12 h-12 rounded-xl ${tool.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
+                        className={`w-16 h-16 rounded-2xl ${tool.bg} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg`}
                       >
-                        <tool.icon className={`w-6 h-6 ${tool.color}`} />
+                        <tool.icon className={`w-8 h-8 ${tool.color}`} />
                       </div>
 
-                      <h3 className="text-xl font-bold text-white mb-2">
+                      <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-neon-blue transition-colors">
                         {tool.name}
                       </h3>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-gray-400 text-base leading-relaxed flex-1">
                         {tool.description}
                       </p>
+
+                      <div className="mt-6 flex items-center text-sm font-medium text-gray-500 group-hover:text-white transition-colors">
+                        <span>Launch Tool</span>
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
                   </Link>
                 ))}

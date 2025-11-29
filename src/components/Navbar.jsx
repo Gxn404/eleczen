@@ -8,10 +8,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
-  { name: "Home", href: "/" },
+  { name: "Dashboard", href: "/" },
   { name: "Tools", href: "/tools" },
   { name: "Encyclopedia", href: "/encyclopedia" },
-  { name: "Showcase", href: "/showcase" },
+  { name: "Projects", href: "/projects" },
   { name: "Blog", href: "/blog" },
 ];
 
@@ -168,11 +168,10 @@ export default function Navbar() {
                   <Link
                     href={item.href}
                     onClick={() => setIsOpen(false)}
-                    className={`block px-4 py-3 rounded-xl text-base font-medium transition-all ${
-                      pathname === item.href
+                    className={`block px-4 py-3 rounded-xl text-base font-medium transition-all ${pathname === item.href
                         ? "text-black bg-neon-blue font-bold shadow-[0_0_15px_rgba(0,243,255,0.3)]"
                         : "text-gray-300 hover:text-white hover:bg-white/10"
-                    }`}
+                      }`}
                   >
                     {item.name}
                   </Link>

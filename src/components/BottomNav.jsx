@@ -11,7 +11,7 @@ export default function BottomNav() {
     { name: "Home", href: "/", icon: Home },
     { name: "Tools", href: "/tools", icon: PenTool },
     { name: "Search", href: "/encyclopedia", icon: Search },
-    { name: "Showcase", href: "/showcase", icon: Grid },
+    { name: "Projects", href: "/projects", icon: Grid },
     { name: "Profile", href: "/profile", icon: User },
   ];
 
@@ -26,8 +26,8 @@ export default function BottomNav() {
                 key={item.name}
                 href={item.href}
                 className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive
-                    ? "text-neon-blue"
-                    : "text-gray-400 hover:text-gray-200"
+                  ? "text-neon-blue"
+                  : "text-gray-400 hover:text-gray-200"
                   }`}
               >
                 <item.icon

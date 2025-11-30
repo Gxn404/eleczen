@@ -1,6 +1,4 @@
-import dbConnect from "@/lib/db";
-import Post from "@/models/Post";
-import Component from "@/models/Component";
+import { createStaticClient } from "@/utils/supabase/static";
 
 export default async function sitemap() {
     // Base URL
@@ -13,7 +11,7 @@ export default async function sitemap() {
         '/signup',
         '/encyclopedia',
         '/tools',
-        '/showcase',
+        '/projects',
         '/blog',
         '/about',
         '/contact',
@@ -26,29 +24,22 @@ export default async function sitemap() {
 
     // Dynamic Routes
     let blogRoutes = [];
-    let componentRoutes = [];
 
     try {
-        await dbConnect();
-        const posts = await Post.find({}).select('slug updatedAt');
-        blogRoutes = posts.map((post) => ({
-            url: `${baseUrl}/blog/${post.slug}`,
-            lastModified: post.updatedAt,
-            changeFrequency: 'weekly',
-            priority: 0.8,
-        }));
+        const supabase = createStaticClient();
+        const { data: posts } = await supabase.from('posts').select('slug, updated_at');
 
-        // Dynamic Components (Encyclopedia)
-        const components = await Component.find({}).select('_id updatedAt');
-        componentRoutes = components.map((comp) => ({
-            url: `${baseUrl}/encyclopedia/${comp._id}`,
-            lastModified: comp.updatedAt,
-            changeFrequency: 'monthly',
-            priority: 0.6,
-        }));
+        if (posts) {
+            blogRoutes = posts.map((post) => ({
+                url: `${baseUrl}/blog/${post.slug}`,
+                lastModified: new Date(post.updated_at),
+                changeFrequency: 'weekly',
+                priority: 0.8,
+            }));
+        }
     } catch (error) {
         console.warn("Could not fetch dynamic routes for sitemap:", error.message);
     }
 
-    return [...routes, ...blogRoutes, ...componentRoutes];
+    return [...routes, ...blogRoutes];
 }

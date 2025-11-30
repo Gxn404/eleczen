@@ -1,179 +1,162 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import { ArrowRight, Calendar, Clock, User } from "lucide-react";
+import { createClient } from "@/utils/supabase/server";
 
-export default function BlogListing() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    async function fetchPosts() {
-      try {
-        const res = await fetch("/api/blog");
-        const data = await res.json();
-        // API returns array directly
-        if (Array.isArray(data)) {
-          setPosts(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch posts", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchPosts();
-  }, []);
+export default async function BlogPage() {
+  const supabase = await createClient();
+  const { data: posts, error } = await supabase
+    .from("posts")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen p-8 max-w-7xl mx-auto">
-        <Breadcrumbs className="mb-6" />
-        <h1 className="text-4xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">
-          Latest Insights
-        </h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="glass-panel h-64 rounded-xl animate-pulse bg-white/5"
-            ></div>
-          ))}
-        </div>
-      </div>
-    );
+  if (error) {
+    console.error("Error fetching posts:", error);
+    // Handle error appropriately, maybe return empty array or show error message
   }
 
-  const featuredPost = posts[0];
-  const regularPosts = posts.slice(1);
+  const featuredPost = posts?.[0];
+  const regularPosts = posts?.slice(1) || [];
 
   return (
-    <div className="min-h-screen p-8 max-w-7xl mx-auto">
-      <Breadcrumbs className="mb-6" />
-      <div className="flex flex-col md:flex-row justify-between items-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple neon-text">
-          Latest Insights
-        </h1>
-        <p className="text-gray-400 mt-4 md:mt-0 max-w-md text-center md:text-right">
-          Explore the latest trends, tutorials, and deep dives into the world of
-          electronics and circuit design.
-        </p>
-      </div>
-
-      {posts.length === 0 ? (
-        <div className="text-center py-20 glass-panel rounded-xl">
-          <h2 className="text-2xl text-gray-400">No posts found yet.</h2>
-          <p className="text-gray-500 mt-2">Check back soon for updates!</p>
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
+            Community <span className="text-neon-pink">Blog</span>
+          </h1>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            Insights, tutorials, and deep dives into the world of electronics.
+          </p>
         </div>
-      ) : (
-        <div className="space-y-12">
-          {/* Featured Post Hero */}
-          {featuredPost && (
-            <Link href={`/blog/${featuredPost.slug}`} className="block group">
-              <article className="glass-panel rounded-2xl overflow-hidden relative grid md:grid-cols-2 gap-0 border border-white/10 hover:border-neon-blue/50 transition-all duration-300">
-                <div className="h-64 md:h-auto bg-gray-900 relative overflow-hidden">
-                  {featuredPost.coverImage ? (
+
+        {/* Featured Post */}
+        {featuredPost && (
+          <div className="mb-20">
+            <Link href={`/blog/${featuredPost.slug}`} className="group block">
+              <div className="relative rounded-3xl overflow-hidden border border-white/10 aspect-[21/9]">
+                <div className="absolute inset-0">
+                  {featuredPost.cover_image ? (
                     <img
-                      src={featuredPost.coverImage}
+                      src={featuredPost.cover_image}
                       alt={featuredPost.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-700">
-                      <span className="text-6xl">⚡</span>
-                    </div>
+                    <div className="w-full h-full bg-gradient-to-br from-gray-900 to-black" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent md:bg-gradient-to-r" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
                 </div>
-                <div className="p-8 md:p-12 flex flex-col justify-center">
-                  <div className="flex gap-2 mb-4">
-                    <span className="px-3 py-1 rounded-full bg-neon-blue text-black text-xs font-bold uppercase tracking-wider">
-                      Featured
-                    </span>
-                    {featuredPost.tags?.slice(0, 2).map((tag) => (
+
+                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    {featuredPost.tags?.map((tag) => (
                       <span
                         key={tag}
-                        className="px-3 py-1 rounded-full bg-white/5 text-gray-300 text-xs font-medium border border-white/10"
+                        className="px-3 py-1 rounded-full bg-neon-pink/20 text-neon-pink border border-neon-pink/30 text-sm font-medium backdrop-blur-md"
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 group-hover:text-neon-blue transition-colors leading-tight">
+                  <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight group-hover:text-neon-pink transition-colors">
                     {featuredPost.title}
                   </h2>
-                  <p className="text-gray-400 mb-6 line-clamp-3 text-lg">
-                    {featuredPost.excerpt ||
-                      featuredPost.content.substring(0, 150) + "..."}
+                  <p className="text-lg text-gray-300 max-w-3xl mb-6 line-clamp-2">
+                    {featuredPost.excerpt}
                   </p>
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mt-auto">
+                  <div className="flex items-center gap-6 text-gray-400 text-sm font-medium">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gray-700" />
-                      <span>{featuredPost.author?.name || "ElecZen Author"}</span>
+                      <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden">
+                        {featuredPost.author_image && (
+                          <img src={featuredPost.author_image} alt={featuredPost.author_name} className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <span>{featuredPost.author_name}</span>
                     </div>
-                    <span>•</span>
-                    <span>{new Date(featuredPost.createdAt).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      <span>
+                        {new Date(featuredPost.created_at).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </article>
+              </div>
             </Link>
-          )}
-
-          {/* Regular Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {regularPosts.map((post) => (
-              <Link
-                href={`/blog/${post.slug}`}
-                key={post._id}
-                className="group"
-              >
-                <article className="glass-panel rounded-xl overflow-hidden h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(0,243,255,0.15)] border border-white/5 hover:border-neon-blue/50 flex flex-col">
-                  <div className="h-48 bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
-                    {/* Placeholder for cover image if none exists */}
-                    {post.coverImage ? (
-                      <img
-                        src={post.coverImage}
-                        alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-gray-700">
-                        <span className="text-4xl">⚡</span>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                  </div>
-                  <div className="p-6 flex-1 flex flex-col">
-                    <div className="flex gap-2 mb-3">
-                      {post.tags?.slice(0, 2).map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs font-medium px-2 py-1 rounded-full bg-neon-blue/10 text-neon-blue border border-neon-blue/20"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <h2 className="text-xl font-bold mb-2 text-white group-hover:text-neon-blue transition-colors line-clamp-2">
-                      {post.title}
-                    </h2>
-                    <p className="text-gray-400 text-sm line-clamp-3 mb-4 flex-1">
-                      {post.excerpt || post.content.substring(0, 100) + "..."}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-gray-500 mt-auto pt-4 border-t border-white/5">
-                      <span>
-                        {new Date(post.createdAt).toLocaleDateString()}
-                      </span>
-                      <span className="group-hover:translate-x-1 transition-transform">Read more →</span>
-                    </div>
-                  </div>
-                </article>
-              </Link>
-            ))}
           </div>
+        )}
+
+        {/* Regular Posts Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {regularPosts.map((post) => (
+            <Link href={`/blog/${post.slug}`} key={post.id} className="group flex flex-col h-full">
+              <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 hover:border-neon-pink/50 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
+                <div className="relative aspect-video overflow-hidden">
+                  {post.cover_image ? (
+                    <img
+                      src={post.cover_image}
+                      alt={post.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+                      <span className="text-4xl">⚡</span>
+                    </div>
+                  )}
+                  <div className="absolute top-4 left-4">
+                    <span className="px-3 py-1 rounded-full bg-black/50 text-white text-xs font-medium backdrop-blur-md border border-white/10">
+                      {post.tags?.[0] || "Article"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-6 flex flex-col flex-1">
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(post.created_at).toLocaleDateString()}
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      5 min read
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-white mb-3 line-clamp-2 group-hover:text-neon-pink transition-colors">
+                    {post.title}
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-6 line-clamp-3 flex-1">
+                    {post.excerpt}
+                  </p>
+
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden">
+                        {post.author_image && (
+                          <img src={post.author_image} alt={post.author_name} className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400 font-medium">
+                        {post.author_name}
+                      </span>
+                    </div>
+                    <span className="text-neon-pink text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                      Read <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -2,38 +2,30 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Edit } from "lucide-react";
 import { auth } from "@/auth";
-import dbConnect from "@/lib/db";
-import Post from "@/models/Post";
 import JsonLd from "@/components/JsonLd";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CommentsSection from "@/components/CommentsSection";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
-import "highlight.js/styles/atom-one-dark.css"; // Dark theme for code blocks
+import "highlight.js/styles/atom-one-dark.css";
+import { createClient } from "@/utils/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-import { getPostBySlug } from "@/lib/notion";
-
-// Server Component for SEO and initial data
 async function getPost(slug) {
-  await dbConnect();
+  const supabase = await createClient();
+  const { data: post, error } = await supabase
+    .from("posts")
+    .select("*")
+    .eq("slug", slug)
+    .single();
 
-  // Try MongoDB first
-  const post = await Post.findOne({ slug }).populate("author", "name image");
-
-  if (post) {
-    return JSON.parse(JSON.stringify(post));
+  if (error) {
+    console.error("Error fetching post:", error);
+    return null;
   }
-
-  // Try Notion
-  const notionPost = await getPostBySlug(slug);
-  if (notionPost) {
-    return notionPost;
-  }
-
-  return null;
+  return post;
 }
 
 export async function generateMetadata({ params }) {
@@ -48,17 +40,17 @@ export async function generateMetadata({ params }) {
 
   return {
     title: post.title,
-    description: post.content.substring(0, 160) + "...",
+    description: post.excerpt || post.content.substring(0, 160) + "...",
     openGraph: {
       title: post.title,
-      description: post.content.substring(0, 160) + "...",
+      description: post.excerpt || post.content.substring(0, 160) + "...",
       type: "article",
-      publishedTime: post.createdAt,
-      authors: [post.author?.name || "ElecZen Author"],
+      publishedTime: post.created_at,
+      authors: [post.author_name || "ElecZen Author"],
       tags: post.tags,
       images: [
         {
-          url: post.coverImage || "/og-image.jpg",
+          url: post.cover_image || "/og-image.jpg",
           width: 1200,
           height: 630,
           alt: post.title,
@@ -68,8 +60,8 @@ export async function generateMetadata({ params }) {
     twitter: {
       card: "summary_large_image",
       title: post.title,
-      description: post.content.substring(0, 160) + "...",
-      images: [post.coverImage || "/og-image.jpg"],
+      description: post.excerpt || post.content.substring(0, 160) + "...",
+      images: [post.cover_image || "/og-image.jpg"],
     },
   };
 }
@@ -88,12 +80,12 @@ export default async function BlogPost({ params }) {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    image: post.coverImage || "https://eleczen.com/og-image.jpg",
-    datePublished: post.createdAt,
-    dateModified: post.updatedAt,
+    image: post.cover_image || "https://eleczen.com/og-image.jpg",
+    datePublished: post.created_at,
+    dateModified: post.updated_at,
     author: {
       "@type": "Person",
-      name: post.author?.name || "ElecZen Author",
+      name: post.author_name || "ElecZen Author",
     },
   };
 
@@ -117,7 +109,7 @@ export default async function BlogPost({ params }) {
           />
           {isAdmin && (
             <Link
-              href={`/admin/blog/edit/${post._id}`}
+              href={`/admin/blog/edit/${post.id}`}
               className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10"
             >
               <Edit className="w-4 h-4" />
@@ -128,9 +120,9 @@ export default async function BlogPost({ params }) {
 
         <article className="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/10 animate-fade-in-up">
           <div className="relative h-64 md:h-96 w-full group">
-            {post.coverImage ? (
+            {post.cover_image ? (
               <img
-                src={post.coverImage}
+                src={post.cover_image}
                 alt={post.title}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
@@ -158,17 +150,17 @@ export default async function BlogPost({ params }) {
               <div className="flex items-center gap-4 text-gray-300">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden border border-white/20">
-                    {post.author?.image ? (
-                      <img src={post.author.image} alt={post.author.name} className="w-full h-full object-cover" />
+                    {post.author_image ? (
+                      <img src={post.author_image} alt={post.author_name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-neon-purple/20 text-neon-purple font-bold text-lg">
-                        {post.author?.name?.[0] || "A"}
+                        {post.author_name?.[0] || "A"}
                       </div>
                     )}
                   </div>
                   <div>
                     <span className="font-medium text-white block">
-                      {post.author?.name || "Anonymous"}
+                      {post.author_name || "Anonymous"}
                     </span>
                     <span className="text-xs text-gray-400">Author</span>
                   </div>
@@ -176,7 +168,7 @@ export default async function BlogPost({ params }) {
                 <div className="w-px h-8 bg-white/10" />
                 <div>
                   <time className="text-sm text-gray-300 block">
-                    {new Date(post.createdAt).toLocaleDateString(undefined, {
+                    {new Date(post.created_at).toLocaleDateString(undefined, {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric'
@@ -200,7 +192,7 @@ export default async function BlogPost({ params }) {
           </div>
         </article>
 
-        <CommentsSection postId={post._id} />
+        <CommentsSection postId={post.id} />
       </div>
     </div>
   );

@@ -1,10 +1,18 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import Webcam from "react-webcam";
-import { createWorker } from "tesseract.js";
+import dynamic from "next/dynamic";
 import { Camera, RefreshCw, Zap, Search, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+
+const Webcam = dynamic(() => import("react-webcam"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-black/50 text-gray-400">
+      <Loader2 className="w-8 h-8 animate-spin" />
+    </div>
+  ),
+});
 
 export default function ComponentScanner() {
   const webcamRef = useRef(null);
@@ -23,6 +31,7 @@ export default function ComponentScanner() {
     setResult(null);
 
     try {
+      const { createWorker } = await import("tesseract.js");
       const worker = await createWorker("eng");
       const {
         data: { text },
@@ -93,22 +102,22 @@ export default function ComponentScanner() {
           <div className="glass-panel rounded-2xl p-4 border border-white/10 overflow-hidden relative min-h-[300px] flex items-center justify-center bg-black/50">
             {!imgSrc
               ? <div className="relative w-full h-full">
-                  <Webcam
-                    audio={false}
-                    ref={webcamRef}
-                    screenshotFormat="image/jpeg"
-                    className="w-full h-full rounded-xl object-cover"
-                    videoConstraints={{ facingMode: "environment" }}
-                  />
-                  <div className="absolute inset-0 border-2 border-neon-pink/50 rounded-xl pointer-events-none">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-neon-pink rounded-lg animate-pulse shadow-[0_0_20px_rgba(255,0,128,0.5)]" />
-                  </div>
-                </div>
-              : <img
-                  src={imgSrc}
-                  alt="Captured"
+                <Webcam
+                  audio={false}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
                   className="w-full h-full rounded-xl object-cover"
-                />}
+                  videoConstraints={{ facingMode: "environment" }}
+                />
+                <div className="absolute inset-0 border-2 border-neon-pink/50 rounded-xl pointer-events-none">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-neon-pink rounded-lg animate-pulse shadow-[0_0_20px_rgba(255,0,128,0.5)]" />
+                </div>
+              </div>
+              : <img
+                src={imgSrc}
+                alt="Captured"
+                className="w-full h-full rounded-xl object-cover"
+              />}
           </div>
 
           {/* Controls & Results */}
@@ -116,18 +125,18 @@ export default function ComponentScanner() {
             <div className="glass-panel rounded-2xl p-6 border border-white/10">
               {!imgSrc
                 ? <button
-                    onClick={capture}
-                    disabled={scanning}
-                    className="w-full py-4 rounded-xl bg-neon-pink text-black font-bold hover:bg-neon-pink/90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,128,0.3)]"
-                  >
-                    <Camera className="w-5 h-5" /> Capture & Scan
-                  </button>
+                  onClick={capture}
+                  disabled={scanning}
+                  className="w-full py-4 rounded-xl bg-neon-pink text-black font-bold hover:bg-neon-pink/90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,0,128,0.3)]"
+                >
+                  <Camera className="w-5 h-5" /> Capture & Scan
+                </button>
                 : <button
-                    onClick={reset}
-                    className="w-full py-4 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
-                  >
-                    <RefreshCw className="w-5 h-5" /> Scan Another
-                  </button>}
+                  onClick={reset}
+                  className="w-full py-4 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-5 h-5" /> Scan Another
+                </button>}
             </div>
 
             {scanning && (

@@ -1,4 +1,3 @@
-import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Providers from "@/components/Providers";
@@ -6,15 +5,8 @@ import ToastProvider from "@/components/ToastProvider";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 
-const inter = Inter({
-  variable: "--font-geist-sans", // Keeping the variable name to avoid breaking css
-  subsets: ["latin"],
-});
+// Using system fonts via CSS variables defined in globals.css
 
-const robotoMono = Roboto_Mono({
-  variable: "--font-geist-mono", // Keeping the variable name to avoid breaking css
-  subsets: ["latin"],
-});
 
 export const metadata = {
   metadataBase: new URL("https://eleczen.app"),
@@ -104,13 +96,15 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover'
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${robotoMono.variable} antialiased min-h-screen bg-black text-white selection:bg-neon-blue/30 relative`}
+        className={`antialiased min-h-screen bg-black text-white selection:bg-neon-blue/30 relative`}
       >
         {/* Background Grid Effect */}
         <div
@@ -125,8 +119,8 @@ export default function RootLayout({ children }) {
           <BottomNav />
         </Providers>
       </body>
-      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3992023609980021"
-        crossOrigin="anonymous"></script>
+      {/* <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3992023609980021"
+        crossOrigin="anonymous"></script> */}
     </html>
   );
 }

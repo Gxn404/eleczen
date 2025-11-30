@@ -1,7 +1,7 @@
 {
-  "name": "ElecZen - AI Electronics Platform",
-  "short_name": "ElecZen",
-  "description": "The ultimate platform for electronics engineers. Design, simulate, and discover components with AI-powered tools.",
+  "name": "Eleczen - Your digital destination for Electrical and Electronics",
+  "short_name": "Eleczen",
+  "description": "The ultimate platform for electrical and electronics engineers. Design, simulate, and discover components with AI-powered tools.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

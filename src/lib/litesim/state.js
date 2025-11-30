@@ -145,14 +145,18 @@ export const useLiteSimStore = create(
             // Simulation Step
             runSimulation: () => {
                 const state = get();
+                if (!state.isRunning) return; // Only run if enabled
+
                 const updates = evaluateCircuit(state.components, state.wires);
 
                 // Merge updates into components
-                set(prev => ({
-                    components: prev.components.map(c =>
-                        updates[c.id] ? { ...c, state: { ...c.state, ...updates[c.id] } } : c
-                    )
-                }));
+                if (updates && Object.keys(updates).length > 0) {
+                    set(prev => ({
+                        components: prev.components.map(c =>
+                            updates[c.id] ? { ...c, state: { ...c.state, ...updates[c.id] } } : c
+                        )
+                    }));
+                }
             },
 
             clearCanvas: () => set({ components: [], wires: [], selection: null }),

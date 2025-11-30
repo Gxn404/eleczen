@@ -14,7 +14,7 @@ const Canvas = ({ settings }) => {
     } = useLiteSimStore();
 
     const svgRef = useRef(null);
-    const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
+    const [view, setView] = useState({ x: 0, y: 0, zoom: 2 });
     const [drag, setDrag] = useState(null); // { type: 'pan' | 'comp' | 'handle', id, index, startX, startY, origX, origY }
     const [wiring, setWiring] = useState(null); // { fromComp, fromPort, currX, currY }
 
@@ -531,14 +531,7 @@ const Canvas = ({ settings }) => {
                         let points = wire.points ? [...wire.points] : null;
                         if (!points) {
                             points = findPath(w1, w2, wire.id);
-                            // Update store with calculated points so they persist/can be edited
-                            // Note: Calling setState in render is bad. 
-                            // Better to just use them for render, and only save on drag end or creation.
-                            // For now, we'll just render them.
                         } else {
-                            // Ensure endpoints match current component positions (if moved)
-                            // This is tricky. If we want wires to "follow", we need to re-route or stretch.
-                            // Simple approach: Update start/end points of the array.
                             if (points.length > 0) {
                                 points[0] = w1;
                                 points[points.length - 1] = w2;
@@ -570,7 +563,7 @@ const Canvas = ({ settings }) => {
                                 {/* Render Handles if Selected */}
                                 {isSelected && points && points.map((pt, i) => {
                                     // Don't show handles for start/end (they are attached to ports)
-                                    if (i === 0 || i === points.length - 1) return null;
+                                    
                                     return (
                                         <circle
                                             key={i}

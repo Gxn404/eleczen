@@ -48,12 +48,11 @@ const Workbench = () => {
                             <ResizeHandleHorizontal />
 
                             {/* Bottom: Console Panel */}
-                            <Panel defaultSize={20} minSize={16} maxSize={40} className="border-t border-white/10 bg-black/40 backdrop-blur-xl z-40">
+                            <Panel defaultSize={35} minSize={16} maxSize={50} className="border-t border-white/10 bg-black/40 backdrop-blur-xl z-40">
                                 <ConsolePanel />
                             </Panel>
                         </PanelGroup>
                     </Panel>
-
                     <ResizeHandle />
 
                     {/* Right: Inspector Panel (Properties) */}

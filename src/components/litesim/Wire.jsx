@@ -30,7 +30,7 @@ const Wire = ({ wire, fromPos, toPos, path: customPath, active, isSelected, onMo
                     d={path}
                     stroke="#fff"
                     strokeWidth="2"
-                    strokeDasharray="4 8"
+                    strokeDasharray="8 8"
                     fill="none"
                     className="animate-dash"
                 />

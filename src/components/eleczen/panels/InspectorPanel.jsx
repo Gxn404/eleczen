@@ -85,6 +85,53 @@ const InspectorPanel = () => {
                                 </select>
                             </div>
                         )}
+
+                        {comp.type === 'transistor' && (
+                            <div className="space-y-2">
+                                <label className="text-xs text-gray-500 uppercase font-bold">Beta (hFE)</label>
+                                <input
+                                    type="number"
+                                    value={comp.properties?.beta || 100}
+                                    onChange={(e) => updateComponentProperty(comp.id, 'beta', Number(e.target.value))}
+                                    className="w-full bg-gray-900/50 border border-gray-700 rounded px-2 py-1 text-sm text-white focus:border-cyan-500 outline-none transition-colors"
+                                />
+                            </div>
+                        )}
+
+                        {comp.type === 'switch' && (
+                            <div className="space-y-2">
+                                <label className="text-xs text-gray-500 uppercase font-bold">State</label>
+                                <div className="flex items-center space-x-2">
+                                    <span className={`text-xs ${comp.state?.on ? 'text-green-400' : 'text-red-400'}`}>
+                                        {comp.state?.on ? 'CLOSED' : 'OPEN'}
+                                    </span>
+                                    <button
+                                        onClick={() => updateComponentProperty(comp.id, 'initialState', !comp.properties?.initialState)}
+                                        className="text-xs bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"
+                                    >
+                                        Toggle Initial
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {comp.type === 'mosfet' && (
+                            <div className="space-y-2">
+                                <label className="text-xs text-gray-500 uppercase font-bold">Transconductance (K)</label>
+                                <input
+                                    type="number"
+                                    value={comp.properties?.k || 0.1}
+                                    onChange={(e) => updateComponentProperty(comp.id, 'k', Number(e.target.value))}
+                                    className="w-full bg-gray-900/50 border border-gray-700 rounded px-2 py-1 text-sm text-white focus:border-cyan-500 outline-none transition-colors"
+                                />
+                                <label className="text-xs text-gray-500 uppercase font-bold">Threshold (Vth)</label>
+                                <input
+                                    type="number"
+                                    value={comp.properties?.vth || 2.0}
+                                    onChange={(e) => updateComponentProperty(comp.id, 'vth', Number(e.target.value))}
+                                    className="w-full bg-gray-900/50 border border-gray-700 rounded px-2 py-1 text-sm text-white focus:border-cyan-500 outline-none transition-colors"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             );

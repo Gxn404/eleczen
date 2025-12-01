@@ -8,6 +8,7 @@ const TOOLS = [
     { type: 'switch', label: 'Switch', icon: '🔌', category: 'Input' },
     { type: 'motor', label: 'Motor', icon: '⚙️', category: 'Output' },
     { type: 'transistor', label: 'Transistor', icon: '🔽', category: 'Active' },
+    { type: 'mosfet', label: 'MOSFET', icon: '⚡', category: 'Active' },
     { type: 'breadboard', label: 'Breadboard', icon: '🎛️', category: 'Board' },
 ];
 

@@ -5,6 +5,7 @@ import Switch from './Switch';
 import Motor from './Motor';
 
 import Transistor from './Transistor';
+import MOSFET from './MOSFET';
 import Breadboard from './Breadboard';
 
 export const COMPONENT_REGISTRY = {
@@ -14,6 +15,7 @@ export const COMPONENT_REGISTRY = {
     switch: Switch,
     motor: Motor,
     transistor: Transistor,
+    mosfet: MOSFET,
     breadboard: Breadboard,
 };
 

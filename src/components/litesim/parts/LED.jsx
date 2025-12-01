@@ -7,8 +7,9 @@ const LED = ({ component }) => {
     return (
         <g>
             {/* Glow Filter defs could be global, but inline for now or simple opacity */}
+            {/* Glow Filter defs could be global, but inline for now or simple opacity */}
             {active && (
-                <circle cx="0" cy="-10" r="15" fill={color} opacity="0.4" filter="blur(4px)" />
+                <circle cx="0" cy="-10" r="15" fill={color} opacity={0.4 * (component.state?.brightness || 1)} filter="blur(4px)" className="animate-pulse" />
             )}
 
             {/* Bulb */}

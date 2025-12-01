@@ -143,21 +143,37 @@ export const useLiteSimStore = create(
             })),
 
             // Simulation Step
-            runSimulation: () => {
+            isSimulating: false,
+            runSimulation: async () => {
                 const state = get();
-                if (!state.isRunning) return; // Only run if enabled
+                if (!state.isRunning || state.isSimulating) return;
 
-                const updates = evaluateCircuit(state.components, state.wires);
+                set({ isSimulating: true });
+                try {
+                    const updates = await evaluateCircuit(state.components, state.wires);
 
-                // Merge updates into components
-                if (updates && Object.keys(updates).length > 0) {
-                    set(prev => ({
-                        components: prev.components.map(c =>
-                            updates[c.id] ? { ...c, state: { ...c.state, ...updates[c.id] } } : c
-                        )
-                    }));
+                    // Merge updates into components
+                    if (updates && Object.keys(updates).length > 0) {
+                        set(prev => ({
+                            components: prev.components.map(c =>
+                                updates[c.id] ? { ...c, state: { ...c.state, ...updates[c.id] } } : c
+                            )
+                        }));
+                    }
+                } catch (err) {
+                    console.error("Simulation step failed:", err);
+                    get().addLog(`Simulation Error: ${err.message}`, 'error');
+                } finally {
+                    set({ isSimulating: false });
                 }
             },
+
+            // Logging
+            logs: [{ message: "> System initialized.", type: "info", timestamp: Date.now() }],
+            addLog: (message, type = 'info') => set(state => ({
+                logs: [...state.logs.slice(-99), { message, type, timestamp: Date.now() }]
+            })),
+            clearLogs: () => set({ logs: [] }),
 
             clearCanvas: () => set({ components: [], wires: [], selection: null }),
 

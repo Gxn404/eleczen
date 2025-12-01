@@ -4,6 +4,10 @@ const Resistor = ({ component }) => {
     return (
         <g>
             {/* Body Zigzag */}
+            {component?.state?.power > 0.1 && (
+                <path d="M -10 0 L -7 -5 L -3 5 L 0 -5 L 3 5 L 7 -5 L 10 0"
+                    fill="none" stroke="#f00" strokeWidth="6" strokeOpacity={Math.min(1, component.state.power)} filter="blur(2px)" />
+            )}
             <path d="M -20 0 L -10 0 L -7 -5 L -3 5 L 0 -5 L 3 5 L 7 -5 L 10 0 L 20 0"
                 fill="none" stroke="#d4a373" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
 

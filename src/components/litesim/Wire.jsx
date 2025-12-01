@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Wire = ({ wire, fromPos, toPos, path: customPath, active, isSelected, onMouseDown, onDoubleClick }) => {
+const Wire = ({ wire, fromPos, toPos, path: customPath, active, current, isSelected, onMouseDown, onDoubleClick }) => {
     // Orthogonal routing fallback
     const midX = (fromPos.x + toPos.x) / 2;
     const defaultPath = `M ${fromPos.x} ${fromPos.y} L ${midX} ${fromPos.y} L ${midX} ${toPos.y} L ${toPos.x} ${toPos.y}`;
@@ -25,6 +25,7 @@ const Wire = ({ wire, fromPos, toPos, path: customPath, active, isSelected, onMo
             <path d={path} stroke={active ? "#0ff" : "#666"} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
 
             {/* Current Animation */}
+            {/* Current Animation */}
             {active && (
                 <path
                     d={path}
@@ -33,6 +34,7 @@ const Wire = ({ wire, fromPos, toPos, path: customPath, active, isSelected, onMo
                     strokeDasharray="8 8"
                     fill="none"
                     className="animate-dash"
+                    style={{ animationDuration: `${Math.max(0.2, 1 / (current * 10 || 1))}s` }}
                 />
             )}
         </g>

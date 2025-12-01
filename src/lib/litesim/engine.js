@@ -1,168 +1,140 @@
-/**
- * Eleczen LiteSim Engine
- * Rule-based simulation for instant feedback.
- * 
- * Principles:
- * - No matrix solving (SPICE).
- * - Breadth-first voltage propagation.
- * - Components have "logic" functions that determine state based on inputs.
- */
+import { runSpiceSimulation } from './spice.js';
+import { generateNetlist, getPortsForComponent } from './converter.js';
+import { Models } from './models.js';
 
-export const evaluateCircuit = (components, wires) => {
-    // 1. Build Node Graph
-    // Map each component port to a "Net" ID.
-    // Wires connect ports to the same Net.
+export const evaluateCircuit = async (components, wires) => {
+    try {
+        // 1. Generate Netlist
+        const { netlist, nodeMap, parent, find } = generateNetlist(components, wires);
 
-    const nets = new Map(); // NetID -> { voltage: number, source: boolean }
-    const portToNet = new Map(); // ComponentID:PortID -> NetID
+        // 2. Run Simulation
+        const result = await runSpiceSimulation(netlist);
 
-    // Helper to get/create net
-    let netCounter = 0;
-    const getNetId = (key) => {
-        if (!portToNet.has(key)) {
-            portToNet.set(key, `net_${netCounter++}`);
+        if (!result || !result.data) {
+            console.warn("Simulation returned no data");
+            return {};
         }
-        return portToNet.get(key);
-    };
 
-    // Merge nets connected by wires
-    wires.forEach(wire => {
-        const startKey = `${wire.fromComp}:${wire.fromPort}`;
-        const endKey = `${wire.toComp}:${wire.toPort}`;
+        // 3. Map Results back to Components
+        return mapResultsToUpdates(result, components, nodeMap, parent, find);
+    } catch (error) {
+        console.error("Simulation Error:", error);
+        return {};
+    }
+};
 
-        // Simple union-find or just naive merging for now
-        // For this lite version, we'll just assume wires are perfect conductors
-        // and pre-assign nets.
-        // Actually, let's do a proper union-find if we want auto-routing logic later,
-        // but for now, let's just group connected ports.
-    });
-
-    // RE-THINK: Sim-Lite approach
-    // Just propagate "Power" from Batteries.
-
-    // Reset all component states
+const mapResultsToUpdates = (result, components, nodeMap, parent, find) => {
     const updates = {};
 
-    // Find sources
-    const sources = components.filter(c => c.type === 'battery');
+    // Get the index of the last time point (steady state)
+    // result.data is array of { name, values[] }
+    // We assume all values arrays have same length.
+    const timeData = result.data.find(d => d.name === 'time');
+    const lastIdx = timeData ? timeData.values.length - 1 : 0;
 
-    // Propagate voltage
-    // This is a very naive implementation for the "Lite" feel.
-    // Real implementation would need a graph traversal.
+    // Helper to get node voltage
+    const getVoltage = (netName) => {
+        if (netName === "0") return 0;
+        const trace = result.data.find(d => d.name.toLowerCase() === `v(${netName})`);
+        return trace ? trace.values[lastIdx] : 0;
+    };
 
-    // For the prototype, let's just check if an LED is connected to a Battery.
-    // We need a graph.
+    // Helper to get net name for a component port
+    const getNetName = (compId, portId) => {
+        const key = `${compId}:${portId}`;
+        if (!parent.has(key)) return "0";
+        const root = find(key);
+        return nodeMap.get(root) || "0";
+    };
 
-    const graph = buildGraph(components, wires);
-
-    // Evaluate rules
     components.forEach(comp => {
-        if (comp.type === 'led') {
-            const voltageDiff = getVoltageDiff(comp, graph);
-            updates[comp.id] = { active: voltageDiff > 1.5 }; // Simple threshold
+        const model = Models[comp.type];
+        if (!model) return;
+
+        const ports = getPortsForComponent(comp);
+        const nodeVoltages = {};
+        ports.forEach(p => {
+            const netName = getNetName(comp.id, p);
+            nodeVoltages[p] = getVoltage(netName);
+        });
+
+        // Calculate V, I, P
+        let vDiff = 0, current = 0, power = 0;
+
+        if (comp.type === 'resistor') {
+            vDiff = nodeVoltages.p1 - nodeVoltages.p2;
+            const R = parseFloat(comp.properties?.resistance || 1000);
+            current = vDiff / Math.max(R, 1e-6);
+            power = vDiff * current;
+        } else if (comp.type === 'battery') {
+            vDiff = nodeVoltages.pos - nodeVoltages.neg;
+            // For battery, current is tricky without I(V) output.
+            // We can try to find I(Vname).
+            // Name in netlist was V<id_with_underscores>
+            const spiceName = `v${comp.id.replace(/-/g, '_')}`;
+            const iTrace = result.data.find(d => d.name.toLowerCase() === `i(${spiceName})`);
+            current = iTrace ? iTrace.values[lastIdx] : 0;
+            power = vDiff * current;
+        } else if (comp.type === 'led') {
+            vDiff = nodeVoltages.anode - nodeVoltages.cathode;
+            // Simple model: I = (V - Vf) / Rs
+            const Vf = 1.8;
+            const Rs = 10;
+            if (vDiff > Vf) {
+                current = (vDiff - Vf) / Rs;
+            } else {
+                current = vDiff * 1e-9;
+            }
+            power = vDiff * current;
+        } else if (comp.type === 'switch') {
+            vDiff = nodeVoltages.in - nodeVoltages.out;
+            const R = comp.state?.on ? 0.001 : 1e9;
+            current = vDiff / R;
+            power = vDiff * current;
         }
-        if (comp.type === 'motor') {
-            const voltageDiff = getVoltageDiff(comp, graph);
-            updates[comp.id] = { active: voltageDiff > 2.5, speed: voltageDiff * 10 };
+
+        // Use model.calculateState if available to format the update
+        let update = {};
+        if (model.calculateState) {
+            if (comp.type === 'transistor') {
+                const vBE = nodeVoltages.base - nodeVoltages.emitter;
+                const vCE = nodeVoltages.collector - nodeVoltages.emitter;
+                update = model.calculateState(0, 0, 0, vBE, vCE);
+            } else if (comp.type === 'mosfet') {
+                const vGS = nodeVoltages.gate - nodeVoltages.source;
+                const vDS = nodeVoltages.drain - nodeVoltages.source;
+                update = model.calculateState(0, 0, 0, vGS, vDS);
+            } else {
+                update = { ...model.calculateState(vDiff, current, power), voltage: vDiff, current, power };
+            }
+        } else {
+            update = { voltage: vDiff, current, power };
         }
+
+        // Check Limits (Burn Logic)
+        const burned = checkLimits(comp, vDiff, current, power);
+        if (burned) {
+            update.burned = true;
+        }
+
+        updates[comp.id] = update;
     });
+
+
 
     return updates;
 };
 
-// Helper to build a connectivity graph
-const buildGraph = (components, wires) => {
-    const adj = {}; // PortKey -> [PortKey]
+const checkLimits = (comp, voltage, current, power) => {
+    const maxV = parseFloat(comp.properties?.maxVoltage || Infinity);
+    const maxI = parseFloat(comp.properties?.maxCurrent || Infinity);
+    const maxP = parseFloat(comp.properties?.maxPower || Infinity);
 
-    wires.forEach(w => {
-        const u = `${w.fromComp}:${w.fromPort}`;
-        const v = `${w.toComp}:${w.toPort}`;
-        if (!adj[u]) adj[u] = [];
-        if (!adj[v]) adj[v] = [];
-        adj[u].push(v);
-        adj[v].push(u);
-    });
+    if (Math.abs(voltage) > maxV) return true;
+    if (Math.abs(current) > maxI) return true;
+    if (Math.abs(power) > maxP) return true;
 
-    // Also internal connections (e.g. switch closed)
-    components.forEach(c => {
-        // Switch: Closed = Connected
-        if (c.type === 'switch' && c.state?.on) {
-            addEdge(adj, `${c.id}:in`, `${c.id}:out`);
-        }
-
-        // Resistor: Always Connected (ignoring resistance value for connectivity check)
-        if (c.type === 'resistor') {
-            addEdge(adj, `${c.id}:p1`, `${c.id}:p2`);
-        }
-
-        // Transistor (NPN Idealized):
-        // If Base is connected to High, Collector-Emitter is connected.
-        if (c.type === 'transistor') {
-            // We need to check Base voltage first. 
-            // This requires a multi-pass or just a simple check against known sources.
-            // For Sim-Lite, let's just check if Base is connected to a Battery Pos in the current graph state (excluding the transistor itself).
-            // This is tricky because the graph isn't fully built.
-            // Let's assume for now we just check if Base is connected to *something* that might be high?
-            // Or better: Iterative simulation. 
-            // But for now, let's just say if it's "active" state (set by previous tick?)
-            // Actually, let's skip complex transistor logic for this exact step and just ensure Resistors work.
-            // We can add a simple "if base connected to battery pos" check here?
-            // No, `adj` is just being built.
-
-            // Let's leave Transistor open for now, or maybe always closed for testing?
-            // No, that defeats the purpose.
-        }
-    });
-
-    return { adj, components };
+    return false;
 };
 
-const addEdge = (adj, u, v) => {
-    if (!adj[u]) adj[u] = [];
-    if (!adj[v]) adj[v] = [];
-    adj[u].push(v);
-    adj[v].push(u);
-};
 
-const getVoltageDiff = (comp, graph) => {
-    // Determine ports based on type
-    let posPort, negPort;
-
-    if (comp.type === 'led') {
-        posPort = `${comp.id}:anode`;
-        negPort = `${comp.id}:cathode`;
-    } else if (comp.type === 'motor') {
-        posPort = `${comp.id}:pos`;
-        negPort = `${comp.id}:neg`;
-    } else {
-        return 0;
-    }
-
-    const hasPathTo = (startPort, targetType, targetPort) => {
-        const queue = [startPort];
-        const visited = new Set();
-        while (queue.length > 0) {
-            const curr = queue.shift();
-            if (visited.has(curr)) continue;
-            visited.add(curr);
-
-            // Check if this port belongs to the target
-            const [compId, portId] = curr.split(':');
-            const node = graph.components.find(c => c.id === compId);
-            if (node && node.type === targetType && portId === targetPort) return true;
-
-            // Neighbors
-            if (graph.adj[curr]) {
-                queue.push(...graph.adj[curr]);
-            }
-        }
-        return false;
-    };
-
-    // Check connectivity to Battery
-    const connectedToPos = hasPathTo(posPort, 'battery', 'pos');
-    const connectedToNeg = hasPathTo(negPort, 'battery', 'neg');
-
-    if (connectedToPos && connectedToNeg) return 9; // Idealized 9V
-    return 0;
-};

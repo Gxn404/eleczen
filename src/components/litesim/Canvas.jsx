@@ -65,6 +65,28 @@ const Canvas = ({ settings }) => {
         return () => clearInterval(interval);
     }, [runSimulation]);
 
+    // Auto-save initial wire paths
+    useEffect(() => {
+        wires.forEach(wire => {
+            if (!wire.points) {
+                const c1 = components.find(c => c.id === wire.fromComp);
+                const c2 = components.find(c => c.id === wire.toComp);
+                if (c1 && c2) {
+                    const def1 = getComponentDef(c1.type);
+                    const def2 = getComponentDef(c2.type);
+                    const p1 = def1.ports.find(p => p.id === wire.fromPort);
+                    const p2 = def2.ports.find(p => p.id === wire.toPort);
+                    if (p1 && p2) {
+                        const w1 = { x: c1.x + p1.x, y: c1.y + p1.y };
+                        const w2 = { x: c2.x + p2.x, y: c2.y + p2.y };
+                        const points = findPath(w1, w2, wire.id);
+                        updateWirePoints(wire.id, points);
+                    }
+                }
+            }
+        });
+    }, [wires, components, updateWirePoints]);
+
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -531,6 +553,10 @@ const Canvas = ({ settings }) => {
                         let points = wire.points ? [...wire.points] : null;
                         if (!points) {
                             points = findPath(w1, w2, wire.id);
+                            // Save calculated path immediately so it persists
+                            // We need to do this in a useEffect or similar to avoid render loop
+                            // But for now, let's just use the calculated points for rendering
+                            // AND trigger an update if it's a new wire (handled in useEffect below)
                         } else {
                             if (points.length > 0) {
                                 points[0] = w1;
@@ -548,7 +574,8 @@ const Canvas = ({ settings }) => {
                                     fromPos={w1}
                                     toPos={w2}
                                     path={pathString}
-                                    active={false}
+                                    active={Math.abs(c1.state?.current || 0) > 1e-6 || Math.abs(c2.state?.current || 0) > 1e-6}
+                                    current={Math.max(Math.abs(c1.state?.current || 0), Math.abs(c2.state?.current || 0))}
                                     isSelected={isSelected}
                                     onMouseDown={(e) => {
                                         e.stopPropagation();
@@ -563,7 +590,7 @@ const Canvas = ({ settings }) => {
                                 {/* Render Handles if Selected */}
                                 {isSelected && points && points.map((pt, i) => {
                                     // Don't show handles for start/end (they are attached to ports)
-                                    
+
                                     return (
                                         <circle
                                             key={i}

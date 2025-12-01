@@ -15,8 +15,8 @@ const Switch = ({ component }) => {
             {/* Lever */}
             <path
                 d={on ? "M -10 0 L 10 0" : "M -10 0 L 8 -8"}
-                stroke="#0ff" strokeWidth="2"
-                className="transition-all duration-200"
+                stroke={on ? "#0f0" : "#f00"} strokeWidth="2"
+                className="transition-all duration-300 ease-in-out"
             />
 
             {/* Click Area (invisible) */}

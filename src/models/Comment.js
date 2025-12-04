@@ -9,8 +9,7 @@ const CommentSchema = new mongoose.Schema(
             maxlength: [1000, "Comment cannot be more than 1000 characters"],
         },
         post: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Post",
+            type: String, // Changed from ObjectId to String to support blog slugs/IDs
             required: true,
         },
         author: {

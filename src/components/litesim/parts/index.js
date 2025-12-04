@@ -8,10 +8,15 @@ import Transistor from './Transistor';
 import MOSFET from './MOSFET';
 import Breadboard from './Breadboard';
 
+import Capacitor from './Capacitor';
+import Inductor from './Inductor';
+
 export const COMPONENT_REGISTRY = {
     battery: Battery,
     led: LED,
     resistor: Resistor,
+    capacitor: Capacitor,
+    inductor: Inductor,
     switch: Switch,
     motor: Motor,
     transistor: Transistor,

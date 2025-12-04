@@ -183,6 +183,45 @@ export const useLiteSimStore = create(
             exportRequest: null, // 'PNG', 'JSON', etc.
             requestExport: (type) => set({ exportRequest: type }),
             resolveExport: () => set({ exportRequest: null }),
+
+            // Project Management
+            loadCircuit: (circuitData) => set({
+                components: circuitData.components || [],
+                wires: circuitData.wires || [],
+                settings: circuitData.settings || { snapToGrid: true, showLabels: true, enableAnimations: true },
+                meta: circuitData.meta || { projectName: "Imported Project", author: "Unknown", version: "1.0.0" }
+            }),
+
+            saveCircuit: async (name, authorId) => {
+                const state = get();
+                const circuitData = {
+                    components: state.components,
+                    wires: state.wires,
+                    settings: state.settings,
+                    meta: { ...state.meta, projectName: name, lastModified: new Date().toISOString() }
+                };
+
+                // If we have an ID, update; otherwise create
+                // For now, simple POST to create/save
+                try {
+                    const res = await fetch('/api/circuits', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            circuitData,
+                            circuitId: state.meta.id // If exists
+                        })
+                    });
+                    if (res.ok) {
+                        get().addLog(`Project "${name}" saved successfully.`, 'success');
+                    } else {
+                        throw new Error("Failed to save");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    get().addLog(`Failed to save project: ${err.message}`, 'error');
+                }
+            },
         }),
         {
             name: 'eleczen-litesim-storage', // unique name

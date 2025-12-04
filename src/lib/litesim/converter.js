@@ -64,59 +64,86 @@ export const generateNetlist = (components, wires) => {
     };
 
     // 2. Generate SPICE Lines
+    const usedModels = new Set();
+
     components.forEach(c => {
         const name = c.id.replace(/-/g, '_'); // SPICE names shouldn't have dashes
         const nodes = getPortsForComponent(c).map(p => getNet(c.id, p));
+        const modelName = c.properties?.model;
+
+        if (modelName) usedModels.add(modelName);
 
         switch (c.type) {
             case 'resistor':
-                // R<name> <n1> <n2> <value>
                 netlist += `R${name} ${nodes[0]} ${nodes[1]} ${c.properties?.resistance || 1000}\n`;
                 break;
             case 'battery':
-                // V<name> <pos> <neg> <value>
                 netlist += `V${name} ${nodes[0]} ${nodes[1]} ${c.properties?.voltage || 9}\n`;
                 break;
             case 'led':
-                // D<name> <anode> <cathode> DLED
-                // We need a model for LED
-                netlist += `D${name} ${nodes[0]} ${nodes[1]} DLED\n`;
+                // Use custom model if provided, else default DLED
+                netlist += `D${name} ${nodes[0]} ${nodes[1]} ${modelName || 'DLED'}\n`;
+                if (!modelName) usedModels.add('DLED');
                 break;
             case 'switch':
-                // S<name> <n1> <n2> <ctrl1> <ctrl2> SW_MODEL
-                // For simple switch, we can model as Resistor that changes value, 
-                // OR use a voltage controlled switch if we had a control node.
-                // Since this is interactive, we might just swap R value in netlist?
-                // SPICE doesn't support interactive "click" switches easily without control source.
-                // We will model as a Resistor for now: Low R (On) / High R (Off)
                 const rVal = c.state?.on ? 0.001 : 1e9;
                 netlist += `R${name} ${nodes[0]} ${nodes[1]} ${rVal}\n`;
                 break;
             case 'transistor': // BJT NPN
-                // Q<name> <C> <B> <E> NPN_MODEL
-                netlist += `Q${name} ${nodes[1]} ${nodes[0]} ${nodes[2]} NPN_GENERIC\n`;
+                netlist += `Q${name} ${nodes[1]} ${nodes[0]} ${nodes[2]} ${modelName || 'NPN_GENERIC'}\n`;
+                if (!modelName) usedModels.add('NPN_GENERIC');
                 break;
             case 'mosfet': // NMOS
-                // M<name> <D> <G> <S> <B> NMOS_MODEL
-                // Assuming Body connected to Source for 3-terminal
-                netlist += `M${name} ${nodes[1]} ${nodes[0]} ${nodes[2]} ${nodes[2]} NMOS_GENERIC\n`;
+                netlist += `M${name} ${nodes[1]} ${nodes[0]} ${nodes[2]} ${nodes[2]} ${modelName || 'NMOS_GENERIC'}\n`;
+                if (!modelName) usedModels.add('NMOS_GENERIC');
                 break;
             case 'capacitor':
-                // C<name> <n1> <n2> <value>
                 netlist += `C${name} ${nodes[0]} ${nodes[1]} ${c.properties?.capacitance || '1u'}\n`;
                 break;
             case 'inductor':
-                // L<name> <n1> <n2> <value>
                 netlist += `L${name} ${nodes[0]} ${nodes[1]} ${c.properties?.inductance || '1m'}\n`;
+                break;
+            case 'subckt': // Generic subcircuit instance
+                // X<name> <nodes...> <subcktName>
+                netlist += `X${name} ${nodes.join(' ')} ${modelName}\n`;
                 break;
         }
     });
 
     // 3. Add Models
+    // Inject models from store
+    usedModels.forEach(mName => {
+        const model = globalModelStore.getModel(mName);
+        if (model) {
+            netlist += `${model.raw}\n`;
+        } else {
+            const subckt = globalModelStore.getSubckt(mName);
+            if (subckt) {
+                netlist += `.subckt ${subckt.name} ${subckt.nodes.join(' ')}\n`;
+                subckt.lines.forEach(l => netlist += `${l}\n`);
+                netlist += `.ends\n`;
+            }
+        }
+    });
+
+    // Inject Globals
+    const globals = globalModelStore.getAllGlobals();
+    globals.forEach(g => {
+        netlist += `${g}\n`;
+    });
+
+    // Fallback defaults if not in store (and not custom)
+    if (usedModels.has('DLED') && !globalModelStore.getModel('DLED')) {
+        netlist += `.model DLED D (IS=1e-14 N=2 RS=10)\n`;
+    }
+    if (usedModels.has('NPN_GENERIC') && !globalModelStore.getModel('NPN_GENERIC')) {
+        netlist += `.model NPN_GENERIC NPN (IS=1e-14 BF=100)\n`;
+    }
+    if (usedModels.has('NMOS_GENERIC') && !globalModelStore.getModel('NMOS_GENERIC')) {
+        netlist += `.model NMOS_GENERIC NMOS (KP=0.1 VTO=2.0)\n`;
+    }
+
     netlist += `
-.model DLED D (IS=1e-14 N=2 RS=10)
-.model NPN_GENERIC NPN (IS=1e-14 BF=100)
-.model NMOS_GENERIC NMOS (KP=0.1 VTO=2.0)
 .tran 0.1 10
 .end
 `;

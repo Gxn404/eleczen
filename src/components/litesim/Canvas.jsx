@@ -4,6 +4,8 @@ import { useLiteSimStore } from '@/lib/litesim/state';
 import ComponentNode from './ComponentNode';
 import Wire from './Wire';
 import { getComponentDef } from './parts';
+import { LibraryChooser } from './LibraryChooser';
+import { ContextMenu } from './ContextMenu';
 
 const Canvas = ({ settings }) => {
     const {
@@ -17,6 +19,10 @@ const Canvas = ({ settings }) => {
     const [view, setView] = useState({ x: 0, y: 0, zoom: 2 });
     const [drag, setDrag] = useState(null); // { type: 'pan' | 'comp' | 'handle', id, index, startX, startY, origX, origY }
     const [wiring, setWiring] = useState(null); // { fromComp, fromPort, currX, currY }
+    const [libraryOpen, setLibraryOpen] = useState(false);
+    const [contextMenu, setContextMenu] = useState(null); // { x, y, type, targetId }
+    const [placingComponent, setPlacingComponent] = useState(null); // { type, model }
+    const [junctions, setJunctions] = useState([]); // Array of {x, y}
 
     // Handle Export Requests
     useEffect(() => {
@@ -99,6 +105,55 @@ const Canvas = ({ settings }) => {
     }, [removeSelection]);
 
     // Coordinate conversion
+    // Calculate Junctions
+    useEffect(() => {
+        const points = new Map(); // "x,y" -> count
+
+        // Helper to add point
+        const addPoint = (x, y) => {
+            const key = `${x},${y}`;
+            points.set(key, (points.get(key) || 0) + 1);
+        };
+
+        // Add all component ports
+        components.forEach(c => {
+            const def = getComponentDef(c.type);
+            def.ports.forEach(p => {
+                addPoint(c.x + p.x, c.y + p.y);
+            });
+        });
+
+        // Add all wire endpoints and corners
+        wires.forEach(w => {
+            if (w.points) {
+                w.points.forEach(p => addPoint(p.x, p.y));
+            } else {
+                // If no points yet (shouldn't happen often due to auto-calc), calc endpoints
+                const c1 = components.find(c => c.id === w.fromComp);
+                const c2 = components.find(c => c.id === w.toComp);
+                if (c1 && c2) {
+                    const def1 = getComponentDef(c1.type);
+                    const def2 = getComponentDef(c2.type);
+                    const p1 = def1.ports.find(p => p.id === w.fromPort);
+                    const p2 = def2.ports.find(p => p.id === w.toPort);
+                    addPoint(c1.x + p1.x, c1.y + p1.y);
+                    addPoint(c2.x + p2.x, c2.y + p2.y);
+                }
+            }
+        });
+
+        // Filter for points with > 2 connections (junctions)
+        const newJunctions = [];
+        points.forEach((count, key) => {
+            if (count > 2) {
+                const [x, y] = key.split(',').map(Number);
+                newJunctions.push({ x, y });
+            }
+        });
+
+        setJunctions(newJunctions);
+    }, [components, wires]);
+
     const screenToWorld = (sx, sy) => {
         if (!svgRef.current) return { x: 0, y: 0 };
         const pt = svgRef.current.createSVGPoint();
@@ -113,14 +168,11 @@ const Canvas = ({ settings }) => {
 
     // A* Pathfinding
     const findPath = (start, end, wireId = null) => {
-        const gridSize = 20; // Match grid size
+        const gridSize = 10; // Match grid size
         const snap = (val) => Math.round(val / gridSize) * gridSize;
 
         const startNode = { x: snap(start.x), y: snap(start.y) };
         const endNode = { x: snap(end.x), y: snap(end.y) };
-
-        // Optimization: If straight line is clear, use it
-        // (Skipped for now to ensure grid alignment)
 
         const openList = [{ ...startNode, g: 0, h: 0, f: 0, parent: null }];
         const closedList = new Set();
@@ -146,37 +198,11 @@ const Canvas = ({ settings }) => {
                     return true;
                 }
             }
-
-            // Wire Obstacles (prevent overlap)
-            // Check against all OTHER wires
-            // This is expensive, so we might limit it or use a spatial grid in a real app
-            // For now, we'll just check segment intersections if we want strict non-overlap,
-            // but for A* grid nodes, we just check if a node is ON another wire.
-            // Simplified: Don't route ON TOP of existing wire segments.
-            for (const w of wires) {
-                if (w.id === wireId) continue; // Don't block self
-                if (!w.points) continue; // Skip uncalculated wires (or handle them)
-
-                // Check if (x,y) is on any segment of w.points
-                for (let i = 0; i < w.points.length - 1; i++) {
-                    const p1 = w.points[i];
-                    const p2 = w.points[i + 1];
-                    // Horizontal segment
-                    if (Math.abs(p1.y - p2.y) < 1 && Math.abs(p1.y - y) < 1) {
-                        if (x >= Math.min(p1.x, p2.x) && x <= Math.max(p1.x, p2.x)) return true;
-                    }
-                    // Vertical segment
-                    if (Math.abs(p1.x - p2.x) < 1 && Math.abs(p1.x - x) < 1) {
-                        if (y >= Math.min(p1.y, p2.y) && y <= Math.max(p1.y, p2.y)) return true;
-                    }
-                }
-            }
-
             return false;
         };
 
         let iterations = 0;
-        const maxIterations = 1000; // Increased for complex routes
+        const maxIterations = 1000;
 
         while (openList.length > 0 && iterations < maxIterations) {
             iterations++;
@@ -239,7 +265,14 @@ const Canvas = ({ settings }) => {
                     continue;
                 }
 
+                // Cost: distance + penalty for turns
                 let gScore = currentNode.g + gridSize;
+                if (currentNode.parent) {
+                    if (currentNode.parent.x !== neighbor.x && currentNode.parent.y !== neighbor.y) {
+                        gScore += gridSize * 2; // Penalty for turn
+                    }
+                }
+
                 let neighborNode = openList.find(n => n.x === neighbor.x && n.y === neighbor.y);
 
                 if (!neighborNode) {
@@ -275,12 +308,41 @@ const Canvas = ({ settings }) => {
     };
 
     const handleMouseDown = (e) => {
-        // Pan start (Background click)
-        setDrag({ type: 'pan', startX: e.clientX, startY: e.clientY, origX: view.x, origY: view.y });
-        // Deselect if clicking background
-        if (e.target.tagName === 'svg') {
-            setSelection(null);
+        // Close context menu on click
+        if (contextMenu) setContextMenu(null);
+
+        // Place component if in placing mode
+        if (placingComponent) {
+            const pt = screenToWorld(e.clientX, e.clientY);
+            let x = pt.x;
+            let y = pt.y;
+            if (snapToGrid) {
+                x = Math.round(x / 10) * 10;
+                y = Math.round(y / 10) * 10;
+            }
+            addComponent(placingComponent.type, x, y, { model: placingComponent.model });
+            setPlacingComponent(null);
+            return;
         }
+
+        // Pan start (Background click)
+        if (e.button === 0) { // Left click only
+            setDrag({ type: 'pan', startX: e.clientX, startY: e.clientY, origX: view.x, origY: view.y });
+            // Deselect if clicking background
+            if (e.target.tagName === 'svg') {
+                setSelection(null);
+            }
+        }
+    };
+
+    const handleContextMenu = (e) => {
+        e.preventDefault();
+        setContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+            type: 'canvas',
+            targetId: null
+        });
     };
 
     const handleCompMouseDown = (e, id) => {
@@ -296,6 +358,17 @@ const Canvas = ({ settings }) => {
 
         const pt = screenToWorld(e.clientX, e.clientY);
         const comp = components.find(c => c.id === id);
+
+        if (e.button === 2) { // Right click
+            setContextMenu({
+                x: e.clientX,
+                y: e.clientY,
+                type: 'component',
+                targetId: id
+            });
+            return;
+        }
+
         setSelection('component', id);
         setDrag({ type: 'comp', id, startX: pt.x, startY: pt.y, origX: comp.x, origY: comp.y });
     };
@@ -510,6 +583,38 @@ const Canvas = ({ settings }) => {
         }
     };
 
+    const handleContextAction = (action, payload) => {
+        switch (action) {
+            case 'place_component':
+                setLibraryOpen(true);
+                break;
+            case 'delete':
+            case 'delete_wire':
+                if (payload.targetId) {
+                    // TODO: Add removeComponent/removeWire to store or use removeSelection if selected
+                    // For now, assuming selection logic handles it or we need new store methods
+                    // We'll just select it and call removeSelection for simplicity
+                    setSelection(payload.type, payload.targetId);
+                    setTimeout(removeSelection, 0);
+                }
+                break;
+            case 'run_simulation':
+                runSimulation();
+                break;
+            case 'rotate':
+                // TODO: Implement rotate in store
+                console.log("Rotate not implemented yet");
+                break;
+            // ... other actions
+        }
+    };
+
+    const handleLibrarySelect = (item) => {
+        setLibraryOpen(false);
+        // Enter placement mode
+        setPlacingComponent({ type: item.type, model: item.name });
+    };
+
     return (
         <div
             className="w-full h-full bg-gray-900 overflow-hidden relative"
@@ -531,6 +636,7 @@ const Canvas = ({ settings }) => {
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
+                onContextMenu={handleContextMenu}
                 onWheel={handleWheel}
                 viewBox={`0 0 ${1000} ${1000}`}
             >
@@ -621,6 +727,18 @@ const Canvas = ({ settings }) => {
                         />
                     ))}
 
+                    {/* Junctions */}
+                    {junctions.map((j, i) => (
+                        <circle
+                            key={`j-${i}`}
+                            cx={j.x}
+                            cy={j.y}
+                            r={4 / view.zoom}
+                            fill="#0ff"
+                            className="pointer-events-none"
+                        />
+                    ))}
+
                     {/* Wiring Line */}
                     {wiring && (
                         <path
@@ -639,7 +757,27 @@ const Canvas = ({ settings }) => {
                     )}
                 </g>
             </svg>
-        </div>
+
+
+            <LibraryChooser
+                isOpen={libraryOpen}
+                onClose={() => setLibraryOpen(false)}
+                onSelect={handleLibrarySelect}
+            />
+
+            {
+                contextMenu && (
+                    <ContextMenu
+                        x={contextMenu.x}
+                        y={contextMenu.y}
+                        type={contextMenu.type}
+                        targetId={contextMenu.targetId}
+                        onClose={() => setContextMenu(null)}
+                        onAction={handleContextAction}
+                    />
+                )
+            }
+        </div >
     );
 };
 

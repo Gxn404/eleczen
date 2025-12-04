@@ -14,18 +14,20 @@ import { createClient } from "@/utils/supabase/server";
 export const dynamic = "force-dynamic";
 
 async function getPost(slug) {
-  const supabase = await createClient();
-  const { data: post, error } = await supabase
-    .from("posts")
-    .select("*")
-    .eq("slug", slug)
-    .single();
+  try {
+    const { default: dbConnect } = await import("@/lib/db");
+    const { default: Post } = await import("@/models/Post");
 
-  if (error) {
+    await dbConnect();
+    const rawPost = await Post.findOne({ slug, published: true })
+      .populate("author", "name image");
+
+    if (!rawPost) return null;
+    return JSON.parse(JSON.stringify(rawPost));
+  } catch (error) {
     console.error("Error fetching post:", error);
     return null;
   }
-  return post;
 }
 
 export async function generateMetadata({ params }) {
@@ -45,12 +47,12 @@ export async function generateMetadata({ params }) {
       title: post.title,
       description: post.excerpt || post.content.substring(0, 160) + "...",
       type: "article",
-      publishedTime: post.created_at,
-      authors: [post.author_name || "ElecZen Author"],
+      publishedTime: post.createdAt,
+      authors: [post.author?.name || "ElecZen Author"],
       tags: post.tags,
       images: [
         {
-          url: post.cover_image || "/og-image.jpg",
+          url: post.coverImage || "/og-image.jpg",
           width: 1200,
           height: 630,
           alt: post.title,
@@ -61,7 +63,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: post.title,
       description: post.excerpt || post.content.substring(0, 160) + "...",
-      images: [post.cover_image || "/og-image.jpg"],
+      images: [post.coverImage || "/og-image.jpg"],
     },
   };
 }
@@ -80,12 +82,12 @@ export default async function BlogPost({ params }) {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    image: post.cover_image || "https://eleczen.com/og-image.jpg",
-    datePublished: post.created_at,
-    dateModified: post.updated_at,
+    image: post.coverImage || "https://eleczen.com/og-image.jpg",
+    datePublished: post.createdAt,
+    dateModified: post.updatedAt,
     author: {
       "@type": "Person",
-      name: post.author_name || "ElecZen Author",
+      name: post.author?.name || "ElecZen Author",
     },
   };
 
@@ -150,17 +152,17 @@ export default async function BlogPost({ params }) {
               <div className="flex items-center gap-4 text-gray-300">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden border border-white/20">
-                    {post.author_image ? (
-                      <img src={post.author_image} alt={post.author_name} className="w-full h-full object-cover" />
+                    {post.author?.image ? (
+                      <img src={post.author.image} alt={post.author.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-neon-purple/20 text-neon-purple font-bold text-lg">
-                        {post.author_name?.[0] || "A"}
+                        {post.author?.name?.[0] || "A"}
                       </div>
                     )}
                   </div>
                   <div>
                     <span className="font-medium text-white block">
-                      {post.author_name || "Anonymous"}
+                      {post.author?.name || "Anonymous"}
                     </span>
                     <span className="text-xs text-gray-400">Author</span>
                   </div>
@@ -168,7 +170,7 @@ export default async function BlogPost({ params }) {
                 <div className="w-px h-8 bg-white/10" />
                 <div>
                   <time className="text-sm text-gray-300 block">
-                    {new Date(post.created_at).toLocaleDateString(undefined, {
+                    {new Date(post.createdAt).toLocaleDateString(undefined, {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric'

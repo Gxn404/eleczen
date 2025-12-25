@@ -1,3 +1,6 @@
+import { runSpiceSimulation } from './spice.js';
+import { globalModelStore } from './modelStore.js';
+
 /**
  * Converts internal Component/Wire state to SPICE Netlist
  */
@@ -59,7 +62,7 @@ export const generateNetlist = (components, wires) => {
 
     const getNet = (compId, portId) => {
         const key = `${compId}:${portId}`;
-        if (!parent.has(key)) return "0"; // Default to ground if floating? Or error?
+        if (!parent.has(key)) return "0";
         return rootToNetName.get(find(key));
     };
 
@@ -67,11 +70,34 @@ export const generateNetlist = (components, wires) => {
     const usedModels = new Set();
 
     components.forEach(c => {
-        const name = c.id.replace(/-/g, '_'); // SPICE names shouldn't have dashes
+        const name = c.id.replace(/-/g, '_');
         const nodes = getPortsForComponent(c).map(p => getNet(c.id, p));
-        const modelName = c.properties?.model;
+        const modelName = c.properties?.model || c.type; // Default to type if no model prop
 
-        if (modelName) usedModels.add(modelName);
+        if (c.properties?.model) usedModels.add(c.properties.model);
+
+        // Check if it's a custom component (not in standard types)
+        const isCustom = !['resistor', 'battery', 'led', 'switch', 'transistor', 'mosfet', 'capacitor', 'inductor'].includes(c.type);
+
+        if (isCustom) {
+            // Generic Subcircuit or Model Instance
+            // X<name> <nodes...> <modelName>
+            // If it's a primitive model (like NPN), it should be Q... but for now assume subckt X...
+            // TODO: Check ModelStore to see if it's a .model or .subckt
+            const modelDef = globalModelStore.getModel(c.type) || globalModelStore.getSubckt(c.type);
+
+            if (modelDef && !modelDef.nodes) {
+                // It's a .model (primitive) - heuristic: try to guess prefix
+                // This is tricky without knowing the primitive type. 
+                // For now, let's assume everything custom is a subcircuit X
+                netlist += `X${name} ${nodes.join(' ')} ${c.type}\n`;
+            } else {
+                // It's a subcircuit
+                netlist += `X${name} ${nodes.join(' ')} ${c.type}\n`;
+            }
+            usedModels.add(c.type);
+            return;
+        }
 
         switch (c.type) {
             case 'resistor':
@@ -81,21 +107,20 @@ export const generateNetlist = (components, wires) => {
                 netlist += `V${name} ${nodes[0]} ${nodes[1]} ${c.properties?.voltage || 9}\n`;
                 break;
             case 'led':
-                // Use custom model if provided, else default DLED
-                netlist += `D${name} ${nodes[0]} ${nodes[1]} ${modelName || 'DLED'}\n`;
-                if (!modelName) usedModels.add('DLED');
+                netlist += `D${name} ${nodes[0]} ${nodes[1]} ${c.properties?.model || 'DLED'}\n`;
+                if (!c.properties?.model) usedModels.add('DLED');
                 break;
             case 'switch':
                 const rVal = c.state?.on ? 0.001 : 1e9;
                 netlist += `R${name} ${nodes[0]} ${nodes[1]} ${rVal}\n`;
                 break;
             case 'transistor': // BJT NPN
-                netlist += `Q${name} ${nodes[1]} ${nodes[0]} ${nodes[2]} ${modelName || 'NPN_GENERIC'}\n`;
-                if (!modelName) usedModels.add('NPN_GENERIC');
+                netlist += `Q${name} ${nodes[1]} ${nodes[0]} ${nodes[2]} ${c.properties?.model || 'NPN_GENERIC'}\n`;
+                if (!c.properties?.model) usedModels.add('NPN_GENERIC');
                 break;
             case 'mosfet': // NMOS
-                netlist += `M${name} ${nodes[1]} ${nodes[0]} ${nodes[2]} ${nodes[2]} ${modelName || 'NMOS_GENERIC'}\n`;
-                if (!modelName) usedModels.add('NMOS_GENERIC');
+                netlist += `M${name} ${nodes[1]} ${nodes[0]} ${nodes[2]} ${nodes[2]} ${c.properties?.model || 'NMOS_GENERIC'}\n`;
+                if (!c.properties?.model) usedModels.add('NMOS_GENERIC');
                 break;
             case 'capacitor':
                 netlist += `C${name} ${nodes[0]} ${nodes[1]} ${c.properties?.capacitance || '1u'}\n`;
@@ -103,15 +128,10 @@ export const generateNetlist = (components, wires) => {
             case 'inductor':
                 netlist += `L${name} ${nodes[0]} ${nodes[1]} ${c.properties?.inductance || '1m'}\n`;
                 break;
-            case 'subckt': // Generic subcircuit instance
-                // X<name> <nodes...> <subcktName>
-                netlist += `X${name} ${nodes.join(' ')} ${modelName}\n`;
-                break;
         }
     });
 
     // 3. Add Models
-    // Inject models from store
     usedModels.forEach(mName => {
         const model = globalModelStore.getModel(mName);
         if (model) {
@@ -132,7 +152,7 @@ export const generateNetlist = (components, wires) => {
         netlist += `${g}\n`;
     });
 
-    // Fallback defaults if not in store (and not custom)
+    // Fallback defaults
     if (usedModels.has('DLED') && !globalModelStore.getModel('DLED')) {
         netlist += `.model DLED D (IS=1e-14 N=2 RS=10)\n`;
     }
@@ -152,6 +172,8 @@ export const generateNetlist = (components, wires) => {
 };
 
 export const getPortsForComponent = (comp) => {
+    if (comp.customPorts) return comp.customPorts;
+
     switch (comp.type) {
         case 'resistor': return ['p1', 'p2'];
         case 'battery': return ['pos', 'neg'];

@@ -39,12 +39,12 @@ export const metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/eleczen_favicon_32.png", sizes: "32x32", type: "image/png" },
-      { url: "/eleczen_favicon_64.png", sizes: "64x64", type: "image/png" },
-      { url: "/eleczen_512.png", sizes: "512x512", type: "image/png" },
+      { url: "../../public/eleczen_favicon_32.png", sizes: "32x32", type: "image/png" },
+      { url: "../../public/eleczen_favicon_64.png", sizes: "64x64", type: "image/png" },
+      { url: "../../public/eleczen_512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/eleczen_198.png", sizes: "198x198", type: "image/png" },
+      { url: "../../public/eleczen_198.png", sizes: "198x198", type: "image/png" },
       { url: "/eleczen_512.png", sizes: "512x512", type: "image/png" },
     ],
     other: [{ rel: "mask-icon", url: "/icon.svg", color: "#00f3ff" }],

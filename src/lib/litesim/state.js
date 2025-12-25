@@ -46,7 +46,7 @@ export const useLiteSimStore = create(
             selection: null,
             isRunning: false,
 
-            addComponent: (type, x, y) => set(state => ({
+            addComponent: (type, x, y, extraData = {}) => set(state => ({
                 components: [
                     ...state.components,
                     {
@@ -57,7 +57,8 @@ export const useLiteSimStore = create(
                         rotation: 0,
                         state: { active: false },
                         properties: {},
-                        connections: [] // New: Pin-based connections
+                        connections: [], // New: Pin-based connections
+                        ...extraData // Merge extra data (customDef, customPorts, etc.)
                     }
                 ],
                 meta: { ...state.meta, lastModified: new Date().toISOString() }

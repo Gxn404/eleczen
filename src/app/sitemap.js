@@ -1,5 +1,4 @@
-import { createStaticClient } from "@/utils/supabase/static";
-
+import { supabase } from "@/lib/supabase";
 export default async function sitemap() {
     // Base URL
     const baseUrl = 'https://eleczen.app';
@@ -26,7 +25,6 @@ export default async function sitemap() {
     let blogRoutes = [];
 
     try {
-        const supabase = createStaticClient();
         const { data: posts } = await supabase.from('posts').select('slug, updated_at');
 
         if (posts) {

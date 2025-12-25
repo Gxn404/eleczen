@@ -1,9 +1,17 @@
 import React, { useRef } from 'react';
-import { getComponentDef } from './parts';
+import { getComponentDef } from './StandardParts';
+import CustomComponent from './CustomComponent';
 
 const ComponentNode = ({ component, isSelected, onMouseDown, showLabels = true }) => {
     const { type, x, y, rotation, state } = component;
-    const CompDef = getComponentDef(type);
+    let CompDef = getComponentDef(type);
+    let ports = CompDef?.ports;
+
+    // Handle Custom Components
+    if (!CompDef && component.customDef) {
+        CompDef = CustomComponent;
+        ports = component.customDef.ports;
+    }
 
     if (!CompDef) return null;
 
@@ -34,7 +42,7 @@ const ComponentNode = ({ component, isSelected, onMouseDown, showLabels = true }
             )}
 
             {/* Render Ports for interaction */}
-            {CompDef.ports.map(port => (
+            {ports && ports.map(port => (
                 <circle
                     key={port.id}
                     cx={port.x} cy={port.y} r="6" // Larger hit area

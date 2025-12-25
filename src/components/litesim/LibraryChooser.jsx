@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { globalModelStore } from '@/lib/litesim/loader/store';
+import { globalModelStore } from '@/lib/litesim/modelStore';
+import { supabase } from '@/lib/supabase';
 
 const CATEGORIES = [
     { id: 'all', label: 'All Components' },
@@ -30,22 +31,48 @@ export const LibraryChooser = ({ isOpen, onClose, onSelect }) => {
 
     useEffect(() => {
         if (isOpen) {
-            // Refresh models from store
-            const storeModels = globalModelStore.getAllModels().map(m => ({
-                ...m,
-                category: 'semicon', // Default for now, could infer from type
-                source: 'library',
-                symbol: m.type.charAt(0).toUpperCase()
-            }));
-            const storeSubckts = globalModelStore.getAllSubckts().map(s => ({
-                ...s,
-                type: 'subckt',
-                category: 'ic',
-                source: 'library',
-                symbol: 'X'
-            }));
+            const loadItems = async () => {
+                // 1. Standard Components
+                let items = [...STANDARD_COMPONENTS];
 
-            setModels([...STANDARD_COMPONENTS, ...storeModels, ...storeSubckts]);
+                // 2. Local Store Models
+                const storeModels = globalModelStore.getAllModels().map(m => ({
+                    ...m,
+                    category: 'semicon',
+                    source: 'local',
+                    symbol: m.type.charAt(0).toUpperCase()
+                }));
+                const storeSubckts = globalModelStore.getAllSubckts().map(s => ({
+                    ...s,
+                    type: 'subckt',
+                    category: 'ic',
+                    source: 'local',
+                    symbol: 'X'
+                }));
+                items = [...items, ...storeModels, ...storeSubckts];
+
+                // 3. Supabase Library Index
+                const { data, error } = await supabase
+                    .from('library_index')
+                    .select('*')
+                    .limit(100); // Limit for now
+
+                if (data) {
+                    const remoteItems = data.map(d => ({
+                        name: d.name,
+                        type: d.type === 'subckt' ? 'ic' : d.type, // Map types
+                        category: d.type === 'subckt' ? 'ic' : 'semicon', // Simplified mapping
+                        source: 'library',
+                        symbol: d.type === 'subckt' ? 'X' : 'Q', // Simplified symbol mapping
+                        params: d.parameters,
+                        nodes: d.pins
+                    }));
+                    items = [...items, ...remoteItems];
+                }
+
+                setModels(items);
+            };
+            loadItems();
         }
     }, [isOpen]);
 
@@ -71,8 +98,8 @@ export const LibraryChooser = ({ isOpen, onClose, onSelect }) => {
                                 key={cat.id}
                                 onClick={() => setCategory(cat.id)}
                                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${category === cat.id
-                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }`}
                             >
                                 {cat.label}
@@ -106,8 +133,8 @@ export const LibraryChooser = ({ isOpen, onClose, onSelect }) => {
                                 onClick={() => setSelectedItem(item)}
                                 onDoubleClick={() => onSelect(item)}
                                 className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedItem === item
-                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-500'
-                                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-500'
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'
                                     }`}
                             >
                                 <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>

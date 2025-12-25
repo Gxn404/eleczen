@@ -1,7 +1,6 @@
 "use client";
 import React from 'react';
 import NavbarPanel from '../panels/NavbarPanel';
-import ComponentPanel from '../panels/ComponentPanel';
 import InspectorPanel from '../panels/InspectorPanel';
 import ConsolePanel from '../panels/ConsolePanel';
 import CanvasPanel from '../panels/CanvasPanel';
@@ -29,14 +28,13 @@ const Workbench = () => {
 
             {/* Main Workspace Grid */}
             <div className="flex-1 flex overflow-hidden">
+                <aside className="w-16 flex flex-col items-center py-4 bg-gray-950 border-r border-white/10 z-50">
+                    {/* Sidebar Tools Placeholder */}
+                    <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-4 text-cyan-400">
+                        ⚡
+                    </div>
+                </aside>
                 <PanelGroup direction="horizontal">
-                    {/* Left: Component Panel (Inventory) */}
-                    <Panel defaultSize={20} minSize={15} maxSize={30} className="flex flex-col border-r border-white/10 bg-white/5 backdrop-blur-md z-40 shadow-2xl">
-                        <ComponentPanel />
-                    </Panel>
-
-                    <ResizeHandle />
-
                     {/* Center: Canvas & Console */}
                     <Panel className="flex flex-col relative">
                         <PanelGroup direction="vertical">

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ArrowRight, Calendar, Clock, User } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
 
 export const dynamic = "force-dynamic";
 

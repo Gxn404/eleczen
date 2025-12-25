@@ -3,9 +3,11 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useLiteSimStore } from '@/lib/litesim/state';
 import ComponentNode from './ComponentNode';
 import Wire from './Wire';
-import { getComponentDef } from './parts';
+import { getComponentDef } from './StandardParts';
 import { LibraryChooser } from './LibraryChooser';
 import { ContextMenu } from './ContextMenu';
+import ActivityPanel from './ActivityPanel';
+import LibraryManager from './LibraryManager';
 
 const Canvas = ({ settings }) => {
     const {
@@ -19,7 +21,8 @@ const Canvas = ({ settings }) => {
     const [view, setView] = useState({ x: 0, y: 0, zoom: 2 });
     const [drag, setDrag] = useState(null); // { type: 'pan' | 'comp' | 'handle', id, index, startX, startY, origX, origY }
     const [wiring, setWiring] = useState(null); // { fromComp, fromPort, currX, currY }
-    const [libraryOpen, setLibraryOpen] = useState(false);
+    const [libraryOpen, setLibraryOpen] = useState(false); // For picking components
+    const [libraryManagerOpen, setLibraryManagerOpen] = useState(false); // For managing libraries
     const [contextMenu, setContextMenu] = useState(null); // { x, y, type, targetId }
     const [placingComponent, setPlacingComponent] = useState(null); // { type, model }
     const [junctions, setJunctions] = useState([]); // Array of {x, y}
@@ -307,6 +310,28 @@ const Canvas = ({ settings }) => {
         return d;
     };
 
+    const loadAndAddComponent = async (name, x, y) => {
+        try {
+            const { globalComponentLoader } = await import('@/lib/simulation/ComponentLoader');
+            const compDef = await globalComponentLoader.loadComponent(name);
+
+            if (compDef) {
+                const liteSimDef = globalComponentLoader.toLiteSimDef(compDef);
+
+                // Add component with custom definition
+                addComponent(name, x, y, {
+                    customDef: liteSimDef,
+                    customPorts: liteSimDef.ports,
+                    model: name // Use component name as model name
+                });
+            } else {
+                console.error(`Failed to load component: ${name}`);
+            }
+        } catch (err) {
+            console.error("Error loading component:", err);
+        }
+    };
+
     const handleMouseDown = (e) => {
         // Close context menu on click
         if (contextMenu) setContextMenu(null);
@@ -320,7 +345,15 @@ const Canvas = ({ settings }) => {
                 x = Math.round(x / 10) * 10;
                 y = Math.round(y / 10) * 10;
             }
-            addComponent(placingComponent.type, x, y, { model: placingComponent.model });
+
+            const def = getComponentDef(placingComponent.type);
+            if (def) {
+                addComponent(placingComponent.type, x, y, { model: placingComponent.model });
+            } else {
+                // Custom Component
+                loadAndAddComponent(placingComponent.type, x, y);
+            }
+
             setPlacingComponent(null);
             return;
         }
@@ -468,7 +501,15 @@ const Canvas = ({ settings }) => {
                 }
             }
 
-            setWiring(prev => ({ ...prev, currX: pt.x, currY: pt.y }));
+            // Snap to grid while wiring
+            let wx = pt.x;
+            let wy = pt.y;
+            if (snapToGrid) {
+                wx = Math.round(wx / 10) * 10;
+                wy = Math.round(wy / 10) * 10;
+            }
+
+            setWiring(prev => ({ ...prev, currX: wx, currY: wy }));
             return;
         }
 
@@ -500,15 +541,18 @@ const Canvas = ({ settings }) => {
             let newY = drag.origY + dy;
 
             if (snapToGrid) {
-                newX = Math.round(newX / 20) * 20; // Snap handles to grid
-                newY = Math.round(newY / 20) * 20;
+                newX = Math.round(newX / 10) * 10;
+                newY = Math.round(newY / 10) * 10;
             }
 
             const wire = wires.find(w => w.id === drag.id);
             if (wire && wire.points) {
                 const newPoints = [...wire.points];
-                newPoints[drag.index] = { x: newX, y: newY };
-                updateWirePoints(drag.id, newPoints);
+                // Prevent moving start/end points if they are connected (though handles shouldn't be shown for them)
+                if (drag.index > 0 && drag.index < newPoints.length - 1) {
+                    newPoints[drag.index] = { x: newX, y: newY };
+                    updateWirePoints(drag.id, newPoints);
+                }
             }
         }
     };
@@ -548,11 +592,42 @@ const Canvas = ({ settings }) => {
 
         if (wiring) {
             const target = document.elementFromPoint(e.clientX, e.clientY);
+
+            // 1. Check for Port
             if (target && target.dataset.portId) {
                 const toComp = target.dataset.compId;
                 const toPort = target.dataset.portId;
                 if (toComp !== wiring.fromComp) {
                     addWire(wiring.fromComp, wiring.fromPort, toComp, toPort);
+                }
+            }
+            // 2. Check for Wire (Junction)
+            else {
+                const pt = screenToWorld(e.clientX, e.clientY);
+                let wx = pt.x;
+                let wy = pt.y;
+                if (snapToGrid) {
+                    wx = Math.round(wx / 10) * 10;
+                    wy = Math.round(wy / 10) * 10;
+                }
+
+                // Check if we dropped on an existing wire
+                for (const w of wires) {
+                    if (!w.points) continue;
+                    for (let i = 0; i < w.points.length - 1; i++) {
+                        const p1 = w.points[i];
+                        const p2 = w.points[i + 1];
+                        // Simple distance check to segment
+                        const dist = distanceToSegment({ x: wx, y: wy }, p1, p2);
+                        if (dist < 5) {
+                            // Split this wire!
+                            // TODO: This requires a more complex store update to split a wire into two
+                            // and insert a junction node. For now, we'll just log it.
+                            console.log("Dropped on wire!", w.id);
+                            // Ideally: create a "Node" component at (wx, wy) and connect both wires to it
+                            break;
+                        }
+                    }
                 }
             }
             setWiring(null);
@@ -615,154 +690,183 @@ const Canvas = ({ settings }) => {
         setPlacingComponent({ type: item.type, model: item.name });
     };
 
+
+
+    // Derive active devices from components on canvas + standard tools
+    // For now, just show unique components present
+    const activeDevices = React.useMemo(() => {
+        const unique = new Map();
+        components.forEach(c => {
+            if (!unique.has(c.type)) {
+                unique.set(c.type, { id: c.type, name: c.type, icon: '⚡' });
+            }
+        });
+        return Array.from(unique.values());
+    }, [components]);
+
     return (
-        <div
-            className="w-full h-full bg-gray-900 overflow-hidden relative"
-            onDrop={handleDrop}
-            onDragOver={e => e.preventDefault()}
-        >
-            {/* Grid Background */}
-            <div className="absolute inset-0 pointer-events-none opacity-20"
-                style={{
-                    backgroundImage: 'linear-gradient(#999 1px, transparent 1px), linear-gradient(90deg, #999 1px, transparent 1px)',
-                    backgroundSize: `${20 * view.zoom}px ${20 * view.zoom}px`,
-                    backgroundPosition: `${view.x}px ${view.y}px`
-                }}
+        <div className="w-full h-full flex bg-gray-900 overflow-hidden relative">
+            <ActivityPanel
+                activeDevices={activeDevices}
+                onSelectDevice={(device) => setPlacingComponent({ type: device.id })}
+                onOpenLibrary={() => setLibraryManagerOpen(true)}
+                onPickComponent={() => setLibraryOpen(true)}
             />
 
-            <svg
-                ref={svgRef}
-                className="w-full h-full touch-none"
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onContextMenu={handleContextMenu}
-                onWheel={handleWheel}
-                viewBox={`0 0 ${1000} ${1000}`}
+            <div
+                className="flex-1 h-full relative"
+                onDrop={handleDrop}
+                onDragOver={e => e.preventDefault()}
             >
-                <g transform={`translate(${view.x}, ${view.y}) scale(${view.zoom})`}>
-                    {/* Wires */}
-                    {wires.map(wire => {
-                        const c1 = components.find(c => c.id === wire.fromComp);
-                        const c2 = components.find(c => c.id === wire.toComp);
-                        if (!c1 || !c2) return null;
+                {/* Grid Background */}
+                <div className="absolute inset-0 pointer-events-none opacity-20"
+                    style={{
+                        backgroundImage: 'linear-gradient(#999 1px, transparent 1px), linear-gradient(90deg, #999 1px, transparent 1px)',
+                        backgroundSize: `${20 * view.zoom}px ${20 * view.zoom}px`,
+                        backgroundPosition: `${view.x}px ${view.y}px`
+                    }}
+                />
 
-                        const def1 = getComponentDef(c1.type);
-                        const def2 = getComponentDef(c2.type);
-                        const p1 = def1.ports.find(p => p.id === wire.fromPort);
-                        const p2 = def2.ports.find(p => p.id === wire.toPort);
+                <svg
+                    ref={svgRef}
+                    className="w-full h-full touch-none"
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onContextMenu={handleContextMenu}
+                    onWheel={handleWheel}
+                    viewBox={`0 0 ${1000} ${1000}`}
+                >
+                    <g transform={`translate(${view.x}, ${view.y}) scale(${view.zoom})`}>
+                        {/* Wires */}
+                        {wires.map(wire => {
+                            const c1 = components.find(c => c.id === wire.fromComp);
+                            const c2 = components.find(c => c.id === wire.toComp);
+                            if (!c1 || !c2) return null;
 
-                        const w1 = { x: c1.x + p1.x, y: c1.y + p1.y };
-                        const w2 = { x: c2.x + p2.x, y: c2.y + p2.y };
+                            const def1 = getComponentDef(c1.type);
+                            const def2 = getComponentDef(c2.type);
+                            const p1 = def1.ports.find(p => p.id === wire.fromPort);
+                            const p2 = def2.ports.find(p => p.id === wire.toPort);
 
-                        // Use existing points or calculate new path
-                        let points = wire.points ? [...wire.points] : null;
-                        if (!points) {
-                            points = findPath(w1, w2, wire.id);
-                            // Save calculated path immediately so it persists
-                            // We need to do this in a useEffect or similar to avoid render loop
-                            // But for now, let's just use the calculated points for rendering
-                            // AND trigger an update if it's a new wire (handled in useEffect below)
-                        } else {
-                            if (points.length > 0) {
-                                points[0] = w1;
-                                points[points.length - 1] = w2;
+                            const w1 = { x: c1.x + p1.x, y: c1.y + p1.y };
+                            const w2 = { x: c2.x + p2.x, y: c2.y + p2.y };
+
+                            // Use existing points or calculate new path
+                            let points = wire.points ? [...wire.points] : null;
+                            if (!points) {
+                                points = findPath(w1, w2, wire.id);
+                                // Save calculated path immediately so it persists
+                                // We need to do this in a useEffect or similar to avoid render loop
+                                // But for now, let's just use the calculated points for rendering
+                                // AND trigger an update if it's a new wire (handled in useEffect below)
+                            } else {
+                                if (points.length > 0) {
+                                    points[0] = w1;
+                                    points[points.length - 1] = w2;
+                                }
                             }
-                        }
 
-                        const pathString = getPathString(points);
-                        const isSelected = selection?.type === 'wire' && selection?.id === wire.id;
+                            const pathString = getPathString(points);
+                            const isSelected = selection?.type === 'wire' && selection?.id === wire.id;
 
-                        return (
-                            <g key={wire.id}>
-                                <Wire
-                                    wire={wire}
-                                    fromPos={w1}
-                                    toPos={w2}
-                                    path={pathString}
-                                    active={Math.abs(c1.state?.current || 0) > 1e-6 || Math.abs(c2.state?.current || 0) > 1e-6}
-                                    current={Math.max(Math.abs(c1.state?.current || 0), Math.abs(c2.state?.current || 0))}
-                                    isSelected={isSelected}
-                                    onMouseDown={(e) => {
-                                        e.stopPropagation();
-                                        setSelection('wire', wire.id);
-                                        // If wire has no points yet, save the current calculated path so it becomes editable
-                                        if (!wire.points) {
-                                            updateWirePoints(wire.id, points);
-                                        }
-                                    }}
-                                    onDoubleClick={(e) => handleWireDoubleClick(e, wire.id)}
-                                />
-                                {/* Render Handles if Selected */}
-                                {isSelected && points && points.map((pt, i) => {
-                                    // Don't show handles for start/end (they are attached to ports)
+                            return (
+                                <g key={wire.id}>
+                                    <Wire
+                                        wire={wire}
+                                        fromPos={w1}
+                                        toPos={w2}
+                                        path={pathString}
+                                        active={Math.abs(c1.state?.current || 0) > 1e-6 || Math.abs(c2.state?.current || 0) > 1e-6}
+                                        current={Math.max(Math.abs(c1.state?.current || 0), Math.abs(c2.state?.current || 0))}
+                                        isSelected={isSelected}
+                                        onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            setSelection('wire', wire.id);
+                                            // If wire has no points yet, save the current calculated path so it becomes editable
+                                            if (!wire.points) {
+                                                updateWirePoints(wire.id, points);
+                                            }
+                                        }}
+                                        onDoubleClick={(e) => handleWireDoubleClick(e, wire.id)}
+                                    />
+                                    {/* Render Handles if Selected */}
+                                    {isSelected && points && points.map((pt, i) => {
+                                        // Don't show handles for start/end (they are attached to ports)
 
-                                    return (
-                                        <circle
-                                            key={i}
-                                            cx={pt.x}
-                                            cy={pt.y}
-                                            r={4 / view.zoom}
-                                            fill="#0ff"
-                                            stroke="#000"
-                                            strokeWidth={1 / view.zoom}
-                                            className="cursor-pointer hover:r-6 transition-all"
-                                            onMouseDown={(e) => handleHandleMouseDown(e, wire.id, i)}
-                                            onDoubleClick={(e) => handleHandleDoubleClick(e, wire.id, i)}
-                                        />
-                                    );
-                                })}
-                            </g>
-                        );
-                    })}
+                                        return (
+                                            <circle
+                                                key={i}
+                                                cx={pt.x}
+                                                cy={pt.y}
+                                                r={4 / view.zoom}
+                                                fill="#0ff"
+                                                stroke="#000"
+                                                strokeWidth={1 / view.zoom}
+                                                className="cursor-pointer hover:r-6 transition-all"
+                                                onMouseDown={(e) => handleHandleMouseDown(e, wire.id, i)}
+                                                onDoubleClick={(e) => handleHandleDoubleClick(e, wire.id, i)}
+                                            />
+                                        );
+                                    })}
+                                </g>
+                            );
+                        })}
 
-                    {/* Components */}
-                    {components.map(comp => (
-                        <ComponentNode
-                            key={comp.id}
-                            component={comp}
-                            isSelected={selection?.id === comp.id}
-                            onMouseDown={handleCompMouseDown}
-                            showLabels={showLabels}
-                        />
-                    ))}
+                        {/* Components */}
+                        {components.map(comp => (
+                            <ComponentNode
+                                key={comp.id}
+                                component={comp}
+                                isSelected={selection?.id === comp.id}
+                                onMouseDown={handleCompMouseDown}
+                                showLabels={showLabels}
+                            />
+                        ))}
 
-                    {/* Junctions */}
-                    {junctions.map((j, i) => (
-                        <circle
-                            key={`j-${i}`}
-                            cx={j.x}
-                            cy={j.y}
-                            r={4 / view.zoom}
-                            fill="#0ff"
-                            className="pointer-events-none"
-                        />
-                    ))}
+                        {/* Junctions */}
+                        {junctions.map((j, i) => (
+                            <circle
+                                key={`j-${i}`}
+                                cx={j.x}
+                                cy={j.y}
+                                r={4 / view.zoom}
+                                fill="#0ff"
+                                className="pointer-events-none"
+                            />
+                        ))}
 
-                    {/* Wiring Line */}
-                    {wiring && (
-                        <path
-                            d={getPathString(findPath(
-                                (() => {
-                                    const c = components.find(c => c.id === wiring.fromComp);
-                                    const def = getComponentDef(c.type);
-                                    const p = def.ports.find(p => p.id === wiring.fromPort);
-                                    return { x: c.x + p.x, y: c.y + p.y };
-                                })(),
-                                { x: wiring.currX, y: wiring.currY }
-                            ))}
-                            stroke="#0ff" strokeWidth="2" strokeDasharray="5 5" fill="none"
-                            className="pointer-events-none"
-                        />
-                    )}
-                </g>
-            </svg>
+                        {/* Wiring Line */}
+                        {wiring && (
+                            <path
+                                d={getPathString(findPath(
+                                    (() => {
+                                        const c = components.find(c => c.id === wiring.fromComp);
+                                        const def = getComponentDef(c.type);
+                                        const p = def.ports.find(p => p.id === wiring.fromPort);
+                                        return { x: c.x + p.x, y: c.y + p.y };
+                                    })(),
+                                    { x: wiring.currX, y: wiring.currY }
+                                ))}
+                                stroke="#0ff" strokeWidth="2" strokeDasharray="5 5" fill="none"
+                                className="pointer-events-none"
+                            />
+                        )}
+                    </g>
+                </svg>
 
+
+            </div>
 
             <LibraryChooser
                 isOpen={libraryOpen}
                 onClose={() => setLibraryOpen(false)}
                 onSelect={handleLibrarySelect}
+            />
+
+            <LibraryManager
+                isOpen={libraryManagerOpen}
+                onClose={() => setLibraryManagerOpen(false)}
             />
 
             {

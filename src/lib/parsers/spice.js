@@ -3,7 +3,7 @@
  * Parses .lib, .mod, .model, and .subckt definitions.
  */
 
-export const parseLibContent = (content) => {
+export const parseSpice = (content) => {
     const lines = content.split('\n');
     const models = [];
     const subckts = [];

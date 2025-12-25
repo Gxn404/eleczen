@@ -9,7 +9,6 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import "highlight.js/styles/atom-one-dark.css";
-import { createClient } from "@/utils/supabase/server";
 
 export const dynamic = "force-dynamic";
 

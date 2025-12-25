@@ -1,0 +1,17 @@
+{
+    "components": [
+        {
+            "name": "LD",
+            "ezc": "component \"LD\"\n    version \"1.0.0\"\n    kind integrated_circuit\n    category \"Uncategorized\"\n\n    meta\n        description \"Imported component LD\"\n        keywords [\"LD\"]\n        manufacturer \"Generic\"\n    end\n\n    model\n        kind spice\n        data <<EOF\n.model LD D(Is=1e-20 Cjo=18p)\n        EOF\n    end\nend"
+        },
+        {
+            "name": "NP",
+            "ezc": "component \"NP\"\n    version \"1.0.0\"\n    kind integrated_circuit\n    category \"Uncategorized\"\n\n    meta\n        description \"Imported component NP\"\n        keywords [\"NP\"]\n        manufacturer \"Generic\"\n    end\n\n    model\n        kind spice\n        data <<EOF\n.model NP NPN(Bf=610 Vaf=140 Ikf=15m Rc=1 Cjc=19p Cje=7p Cjs=7p C2=1e-15)\n        EOF\n    end\nend"
+        },
+        {
+            "name": "4N25",
+            "ezc": "component \"4N25\"\n    version \"1.0.0\"\n    kind integrated_circuit\n    category \"Uncategorized\"\n\n    meta\n        description \"Imported component 4N25\"\n        keywords [\"4N25\"]\n        manufacturer \"Generic\"\n    end\n\n    model\n        kind subckt\n        data <<EOF\n.subckt 4N25 1 2 3 4 5\nR1 N003 2 2\nD1 1 N003 LD\nG1 3 5 N003 2 .876m\nC1 1 2 18p\nQ1 3 5 4 [4] NP\n.ends\n        EOF\n    end\nend"
+        }
+    ],
+    "ezl": "library \"TestLib\"\n    version \"1.0.0\"\n    description \"Imported from 1 files\"\n\n    include \"LD.ezc\"\n    include \"NP.ezc\"\n    include \"4N25.ezc\"\n\n    categories\n        \"Uncategorized\"\n    end\n\n    index\n        \"LD\" : \"Uncategorized\"\n        \"NP\" : \"Uncategorized\"\n        \"4N25\" : \"Uncategorized\"\n    end\n\n    metadata\n        last_updated \"2025-12-03\"\n    end\nend"
+}

@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
-import { generateEZC } from '@/lib/eleczen-dsl/generator';
+import { supabase } from '../../../supabase/supabase';
 
 const LibraryManager = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState('browse'); // browse, upload
@@ -22,7 +21,7 @@ const LibraryManager = ({ isOpen, onClose }) => {
 
     const fetchLibraries = async () => {
         const { data, error } = await supabase
-            .from('component_libraries')
+            .from('libraries')
             .select('*')
             .order('uploaded_at', { ascending: false });
 
@@ -62,7 +61,7 @@ const LibraryManager = ({ isOpen, onClose }) => {
 
         try {
             // Import ComponentProcessor dynamically
-            const { ComponentProcessor } = await import('@/lib/processing/ComponentProcessor');
+            const { ComponentProcessor } = await import('@/lib/processing/converter');
             const processor = new ComponentProcessor();
 
             const totalFiles = uploadFiles.length;
@@ -89,7 +88,7 @@ const LibraryManager = ({ isOpen, onClose }) => {
                         if (zipEntry.dir || relativePath.startsWith('__MACOSX')) continue;
 
                         const fileName = relativePath.split('/').pop();
-                        if (fileName.endsWith('.kicad_sym') || fileName.endsWith('.sub') || fileName.endsWith('.mod') || fileName.endsWith('.cir')) {
+                        if (fileName.endsWith('.kicad_sym') || fileName.endsWith('.sub') || fileName.endsWith('.mod') || fileName.endsWith('.cir') || fileName.endsWith('.asy')|| fileName.endsWith('.lib')) {
                             const text = await zipEntry.async('string');
                             filesToProcess.push({ name: fileName, content: text });
                         }
@@ -99,11 +98,12 @@ const LibraryManager = ({ isOpen, onClose }) => {
 
                     // 2. Process
                     setUploadStatus(`Processing ${filesToProcess.length} files in ${file.name}...`);
+
                     const libraryName = file.name.replace('.zip', '');
-                    const { components, ezl } = processor.processLibrary(filesToProcess, libraryName);
+                    const { ezc, ezl, svg } = processor.processLibrary(filesToProcess, libraryName);
 
                     // 3. Upload
-                    await uploadProcessedFiles(components, ezl, libraryName, (progress) => {
+                    await uploadProcessedFiles(ezc, ezl, svg, libraryName, (progress) => {
                         // Map 0-100 of this file to the overall progress
                         // Each file gets 1/totalFiles share of the progress bar
                         const fileShare = 100 / totalFiles;
@@ -112,9 +112,9 @@ const LibraryManager = ({ isOpen, onClose }) => {
                         setUploadProgress(Math.round(actualProgress));
                     });
 
-                } else if (file.name.endsWith('.ezc') || file.name.endsWith('.ezl')) {
+                } else if (file.name.endsWith('.ezc') || file.name.endsWith('.ezl') || file.name.endsWith('.svg')) {
                     setUploadStatus(`Uploading ${file.name}...`);
-                    const path = `UserUploads/${file.name}`;
+                    const path = `components/${file.name}`;
 
                     const { data, error } = await supabase.storage
                         .from('libraries')
@@ -129,9 +129,9 @@ const LibraryManager = ({ isOpen, onClose }) => {
                             filePath: data.path,
                             originalName: file.name,
                             size: file.size,
-                            type: file.name.endsWith('.ezc') ? 'ezc' : 'ezl',
+                            type: file.name.endsWith('.ezc') ? 'ezc' : 'ezl'? 'ezl': 'svg',
                             componentName: file.name.replace('.ezc', ''),
-                            libraryName: 'UserUploads'
+                            libraryName: file.name
                         })
                     });
 
@@ -142,13 +142,13 @@ const LibraryManager = ({ isOpen, onClose }) => {
                 } else {
                     // Single source file
                     setUploadStatus(`Processing ${file.name}...`);
+
                     const text = await file.text();
                     const filesToProcess = [{ name: file.name, content: text }];
                     const libraryName = file.name.split('.')[0];
+                    const { ezc, ezl, svg } = processor.processLibrary(filesToProcess, libraryName);
 
-                    const { components, ezl } = processor.processLibrary(filesToProcess, libraryName);
-
-                    await uploadProcessedFiles(components, ezl, libraryName, (progress) => {
+                    await uploadProcessedFiles(ezc, ezl, svg, libraryName, (progress) => {
                         const fileShare = 100 / totalFiles;
                         const currentBase = (i * fileShare);
                         const actualProgress = currentBase + (progress * (fileShare / 100));
@@ -173,7 +173,7 @@ const LibraryManager = ({ isOpen, onClose }) => {
         }
     };
 
-    const uploadProcessedFiles = async (components, ezl, libraryName, onProgress) => {
+    const uploadProcessedFiles = async (ezc, ezl, svg, libraryName, onProgress) => {
         const totalItems = (components.length * 2) + 1; // EZC + EZL per component + Main EZL
         let processed = 0;
 
@@ -192,10 +192,9 @@ const LibraryManager = ({ isOpen, onClose }) => {
                 try {
                     // 1.1 Upload EZC
                     setUploadStatus(`Uploading ${comp.name}.ezc...`);
-                    // ComponentProcessor now returns { name, component } where component is the object
-                    const ezcString = generateEZC(comp.component);
-                    const ezcBlob = new Blob([ezcString], { type: 'text/plain' });
-                    const ezcPath = `${libraryName}/${comp.name}/${comp.name}.ezc`;
+                    // ComponentProcessor now returns { name, component } where component is the object;
+                    const ezcBlob = new Blob([ezc], { type: 'text/plain' });
+                    const ezcPath = `components/${comp.name}/${comp.name}.ezc`;
 
                     const { data: ezcData, error: ezcError } = await supabase.storage
                         .from('libraries')
@@ -218,31 +217,48 @@ const LibraryManager = ({ isOpen, onClose }) => {
                     });
                     updateProgress();
 
-                    // 1.2 Generate and Upload Component-level EZL
-                    const compEzlContent = `library "${comp.name}"
-    version "1.0.0"
-    description "Auto-generated library for ${comp.name}"
-    include "${comp.name}.ezc"
-end`;
                     setUploadStatus(`Uploading ${comp.name}.ezl...`);
-                    const compEzlBlob = new Blob([compEzlContent], { type: 'text/plain' });
-                    const compEzlPath = `${libraryName}/${comp.name}/${comp.name}.ezl`;
+                    const ezlBlob = new Blob([ezl], { type: 'text/plain' });
+                    const ezlPath = `components/${comp.name}/${comp.name}.ezl`;
 
-                    const { data: compEzlData, error: compEzlError } = await supabase.storage
+                    const { data: ezlData, error: ezlError } = await supabase.storage
                         .from('libraries')
-                        .upload(compEzlPath, compEzlBlob, { cacheControl: '3600', upsert: true });
+                        .upload(ezlPath, ezlBlob, { cacheControl: '3600', upsert: true });
 
-                    if (compEzlError) throw compEzlError;
+                    if (ezlError) throw ezlError;
 
                     await fetch('/api/library/upload', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            filePath: compEzlData.path,
+                            filePath: ezlData.path,
                             originalName: `${comp.name}.ezl`,
-                            size: compEzlBlob.size,
+                            size: ezlBlob.size,
                             libraryName: comp.name,
                             type: 'ezl'
+                        })
+                    });
+                    updateProgress();
+
+                    setUploadStatus(`Uploading ${comp.name}.svg...`);
+                    const svgBlob = new Blob([svg], { type: 'text/plain' });
+                    const svgPath = `components/${comp.name}/${comp.name}.svg`;
+
+                    const { data: svgData, error: svgError } = await supabase.storage
+                        .from('libraries')
+                        .upload(svgPath, svgBlob, { cacheControl: '3600', upsert: true });
+
+                    if (svgError) throw svgError;
+
+                    await fetch('/api/library/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            filePath: svgData.path,
+                            originalName: `${comp.name}.svg`,
+                            size: svgBlob.size,
+                            libraryName: comp.name,
+                            type: 'svg'
                         })
                     });
                     updateProgress();
@@ -252,35 +268,6 @@ end`;
                 }
             }));
         }
-
-        // 2. Upload Main Library EZL (Index)
-        checkCancelled();
-        setUploadStatus(`Finalizing library ${libraryName}...`);
-
-        const ezlBlob = new Blob([ezl], { type: 'text/plain' });
-        const ezlPath = `${libraryName}/${libraryName}.ezl`;
-
-        const { data: ezlData, error: ezlError } = await supabase.storage
-            .from('libraries')
-            .upload(ezlPath, ezlBlob, {
-                cacheControl: '3600',
-                upsert: true
-            });
-
-        if (!ezlError) {
-            await fetch('/api/library/upload', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    filePath: ezlData.path,
-                    originalName: `${libraryName}.ezl`,
-                    size: ezlBlob.size,
-                    libraryName: libraryName,
-                    type: 'ezl'
-                })
-            });
-        }
-        updateProgress();
     };
 
     if (!isOpen) return null;

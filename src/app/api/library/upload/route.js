@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
-import { parseSpice } from '@/lib/parsers/spice';
+import { supabaseAdmin } from '../../../../../supabase/supabase-admin';
+import { parseSpice } from '@/lib/parser/spice';
 import { parseEZC } from '@/lib/eleczen-dsl/parser';
 import { parseEZL } from '@/lib/eleczen-dsl/library-parser';
 

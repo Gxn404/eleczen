@@ -27,10 +27,22 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      // Add these options for better connection handling
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log("MongoDB Connected Successfully");
       return mongoose;
+    }).catch((error) => {
+      console.error("MongoDB Connection Error:");
+      console.error(error);
+      if (error.name === 'MongoServerError' && error.code === 8000) {
+        console.error("Authentication Failed! Please check your MONGODB_URI credentials in .env.local");
+        console.error("Ensure your username and password are correct and encoded if they contain special characters.");
+      }
+      throw error;
     });
   }
 

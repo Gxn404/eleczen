@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import Canvas from '@/components/litesim/Canvas';
+import Canvas from '@/components/simulation/Canvas';
 import { useLiteSimStore } from '@/lib/litesim/state';
 
 const CanvasPanel = () => {

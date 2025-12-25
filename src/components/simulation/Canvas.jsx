@@ -312,7 +312,7 @@ const Canvas = ({ settings }) => {
 
     const loadAndAddComponent = async (name, x, y) => {
         try {
-            const { globalComponentLoader } = await import('@/lib/simulation/ComponentLoader');
+            const { globalComponentLoader } = await import('@/lib/loader/component');
             const compDef = await globalComponentLoader.loadComponent(name);
 
             if (compDef) {

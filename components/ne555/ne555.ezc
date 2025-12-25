@@ -1,0 +1,25 @@
+component "NE555"
+    version "1.0.0"
+    kind integrated_circuit
+    category "ICs"
+
+    meta
+        description "Precision Timers, 555 compatible,  PDIP-8"
+        keywords ["NE555", "single", "timer", "555"]
+        manufacturer "Generic"
+        datasheet "http://www.ti.com/lit/ds/symlink/ne555.pdf"
+        include "NE555.ezl"
+        preview_image "components/NE555/NE555.svg"
+    end
+
+    pins
+        pin "GND" direction passive order 1
+        pin "TRIG" direction passive order 2
+        pin "OUT" direction passive order 3
+        pin "RST" direction passive order 4
+        pin "CV" direction passive order 5
+        pin "THRS" direction passive order 6
+        pin "DIS" direction passive order 7
+        pin "Vcc" direction passive order 8
+    end
+end

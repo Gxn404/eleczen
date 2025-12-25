@@ -12,15 +12,18 @@ export function generateEZL(library) {
     if (library.author) lines.push(`    author "${library.author}"`);
     if (library.description) lines.push(`    description "${library.description}"`);
 
-    // Include block
-    if (library.includes && library.includes.length > 0) {
+    // Submodel block
+    if (library.submodel) {
         lines.push('');
-        for (const inc of library.includes) {
-            lines.push(`    include "${inc}"`);
+        if (typeof library.submodel === 'string' && (library.submodel.includes('\n') || library.submodel.includes('"'))) {
+            lines.push('    submodel <<EOF');
+            const submodelLines = library.submodel.split('\n').map(l => l.trim() ? '        ' + l : l);
+            lines.push(...submodelLines);
+            lines.push('    EOF');
+        } else {
+            lines.push(`    submodel "${library.submodel}"`);
         }
     }
-
-    // Categories block
     if (library.categories && library.categories.length > 0) {
         lines.push('');
         lines.push('    categories');
@@ -41,11 +44,17 @@ export function generateEZL(library) {
     }
 
     // Metadata block
-    if (library.metadata && Object.keys(library.metadata).length > 0) {
+    // Meta block
+    if (library.meta && Object.keys(library.meta).length > 0) {
         lines.push('');
-        lines.push('    metadata');
-        for (const [key, value] of Object.entries(library.metadata)) {
-            lines.push(`        ${key} "${value}"`);
+        lines.push('    meta');
+        for (const [key, value] of Object.entries(library.meta)) {
+            if (Array.isArray(value)) {
+                const arrayStr = value.map(v => `"${v}"`).join(', ');
+                lines.push(`        ${key} [${arrayStr}]`);
+            } else {
+                lines.push(`        ${key} "${value}"`);
+            }
         }
         lines.push('    end');
     }

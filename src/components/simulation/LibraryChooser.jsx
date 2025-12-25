@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { globalModelStore } from '@/lib/litesim/modelStore';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../../supabase/supabase';
 
 const CATEGORIES = [
     { id: 'all', label: 'All Components' },

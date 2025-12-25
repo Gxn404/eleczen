@@ -1,8 +1,9 @@
-import { parseSpice } from '../parsers/spice.js';
-import { parseKicadSymbol } from '../parsers/kicad-sym.js';
-import { generateEZC } from '../eleczen-dsl/generator.js';
-import { generateEZL } from '../eleczen-dsl/library-generator.js';
-import { generateSvg } from './SvgGenerator.js';
+import { parseSpice } from '../parser/spice.js';
+import { parseKicad } from '../parser/kicad.js';
+import { parseLtspice } from '../parser/ltspice.js';
+import { generateEZC } from '../generator/component.js';
+import { generateEZL } from '../generator/library.js';
+import { generateSvg } from '../generator/svg.js';
 
 export class ComponentProcessor {
     constructor() {
@@ -16,6 +17,7 @@ export class ComponentProcessor {
      * @returns {{components: Array<{name: string, component: Object}>, library: string}}
      */
     processLibrary(files, libraryName = "ImportedLibrary") {
+        this.libraryName = libraryName;
         // 1. Parse all files
         for (const file of files) {
             if (file.name.endsWith('.sub') || file.name.endsWith('.mod') || file.name.endsWith('.cir')) {
@@ -24,9 +26,28 @@ export class ComponentProcessor {
                 models.forEach(m => this.addModel(m, 'spice'));
                 subckts.forEach(s => this.addModel(s, 'subckt'));
             } else if (file.name.endsWith('.kicad_sym')) {
-                // KiCad S-expression symbol
-                const symbols = parseKicadSymbol(file.content);
-                symbols.forEach(sym => this.addSymbol(sym));
+                const meta = parseKicad(file.content);
+                meta.forEach(m => {
+                    this.addSymbol(m);
+
+                    // Try to match with base name
+                    const baseName = m.name.replace(/[A-Z]$/, ''); // Remove last char if uppercase letter
+                    if (baseName !== m.name && this.components.has(baseName)) {
+                        // Create a copy for the base name to merge properties
+                        const copy = { ...m, name: baseName };
+                        this.addSymbol(copy);
+                    }
+                });
+            } else if (file.name.endsWith('.asy') || file.name.endsWith('.sym')) {
+                // LTspice symbol
+                const symbols = parseLtspice(file.content);
+                symbols.forEach(sym => {
+                    // Use filename as name if symbol name is generic
+                    if (sym.name === 'Unknown') {
+                        sym.name = file.name.replace(/\.(asy|sym)$/, '');
+                    }
+                    this.addSymbol(sym);
+                });
             }
         }
 
@@ -35,39 +56,47 @@ export class ComponentProcessor {
         const index = {};
         const categories = new Set();
 
+        const hasAnySymbol = Array.from(this.components.values()).some(c => !!c.symbol);
+
         for (const [name, data] of this.components.entries()) {
-            const component = this.generateComponentEZC(name, data);
+            // Heuristic: skip simple models if they don't have a symbol 
+            // and there are other components with symbols in the library.
+            // This avoids creating separate components for internal models.
+            if (hasAnySymbol && !data.symbol && data.model && data.model.kind === 'spice') {
+                continue;
+            }
+
+            const { component, svg } = this.generateComponentEZC(name, data);
             components.push({ name, component });
 
-            // Build index for library
-            let category = "Uncategorized";
-            if (data.model && data.model.type && ['NPN', 'PNP'].includes(data.model.type.toUpperCase())) {
-                category = `Transistor/${data.model.type.toUpperCase()}`;
-            }
-            index[name] = category;
-            categories.add(category);
+            // Build index for library using the component's category
+            index[name] = component.category;
+            categories.add(component.category);
         }
 
         // 3. Generate EZL
         const library = {
             name: libraryName,
             version: "1.0.0",
-            description: `Imported from ${files.length} files`,
-            includes: components.map(c => `${c.name}.ezc`),
+            // includes: components.map(c => `${c.name}.ezc`), // Removed as per requirement
             categories: Array.from(categories),
             index: index,
-            metadata: {
+            meta: {
                 last_updated: new Date().toISOString().split('T')[0]
-            }
+            },
+            submodel: Array.from(this.components.values())
+                .filter(c => c.model && c.model.data)
+                .map(c => c.model.data)
+                .join('\n\n')
         };
 
         const ezl = generateEZL(library);
-
-        return { components, ezl };
+        const ezc = components.map(c => generateEZC(c.component)).join('\n\n');
+        return { ezc, ezl, svg };
     }
 
     addModel(model, kind) {
-        const name = model.name.toUpperCase();
+        const name = model.name;
         if (!this.components.has(name)) {
             this.components.set(name, {});
         }
@@ -80,7 +109,7 @@ export class ComponentProcessor {
             // Reconstruct subckt definition
             const header = `.subckt ${model.name} ${model.nodes.join(' ')}`;
             const body = model.lines.join('\n');
-            const footer = '.ends';
+            const footer = `.ends ${model.name}`;
             data = `${header}\n${body}\n${footer}`;
 
             // Map nodes to pins (generic numbering)
@@ -100,36 +129,40 @@ export class ComponentProcessor {
     }
 
     addSymbol(symbol) {
-        const name = symbol.name.toUpperCase();
+        const name = symbol.name;
         if (!this.components.has(name)) {
             this.components.set(name, {});
         }
         const comp = this.components.get(name);
-        comp.symbol = {
-            graphic: symbol, // Store full symbol object (pins + graphics)
-            bbox: symbol.bbox
-        };
 
-        // Store properties for metadata
-        if (symbol.properties) {
-            comp.properties = symbol.properties;
+        // If this symbol has graphics (e.g. from LTspice), store it as the graphic source
+        if (symbol.graphics && symbol.graphics.length > 0) {
+            comp.symbol = {
+                graphic: symbol,
+                bbox: symbol.bbox
+            };
+
+            // Merge pins from graphic symbol
+            if (!comp.pins) comp.pins = {};
+            if (symbol.pins) {
+                for (const [pinName, pinData] of Object.entries(symbol.pins)) {
+                    comp.pins[pinName] = {
+                        number: pinData.number,
+                        direction: pinData.direction
+                    };
+                }
+            }
         }
 
-        // Merge pins
-        if (!comp.pins) comp.pins = {};
-
-        // If symbol has pins, use them
-        if (symbol.pins) {
-            for (const [pinName, pinData] of Object.entries(symbol.pins)) {
-                comp.pins[pinName] = {
-                    number: pinData.number,
-                    direction: pinData.direction
-                };
-            }
+        // Merge properties (metadata) from any source (KiCad or LTspice)
+        if (symbol.properties) {
+            if (!comp.properties) comp.properties = {};
+            Object.assign(comp.properties, symbol.properties);
         }
     }
 
     generateComponentEZC(name, data) {
+        let svg ='';
         // Create the component object structure for generator
         const component = {
             name: name,
@@ -140,11 +173,10 @@ export class ComponentProcessor {
                 description: `Imported component ${name}`,
                 keywords: [name],
                 manufacturer: "Generic",
-                datasheet: ""
+                datasheet: "",
+                include: `${this.libraryName || "ImportedLibrary"}.ezl`
             },
-            pins: data.pins || {},
-            model: data.model
-            // symbol: data.symbol // REMOVED as per requirement
+            pins: data.pins || {}
         };
 
         // Extract metadata from properties
@@ -214,13 +246,22 @@ export class ComponentProcessor {
             }
         }
 
+        // Final Category Heuristic based on description/name
+        if (component.category === 'Uncategorized') {
+            const text = (component.meta.description + " " + component.name).toLowerCase();
+            if (text.includes('timer')) component.category = 'ICs/Timer';
+            else if (text.includes('opamp') || text.includes('operational amplifier')) component.category = 'ICs/OpAmp';
+            else if (text.includes('voltage regulator')) component.category = 'Power/Regulator';
+            else if (text.includes('microcontroller') || text.includes('mcu')) component.category = 'ICs/Microcontroller';
+        }
+
         // Generate SVG Preview
         if (data.symbol && data.symbol.graphic) {
-            const svg = generateSvg(data.symbol.graphic);
-            component.meta.preview_image = svg;
+            svg = generateSvg(data.symbol.graphic);
+            component.meta.preview_image = `components/${component.name}/${component.name}.svg`;
         }
 
         // Return the DSL component object directly
-        return component;
+        return component, svg;
     }
 }

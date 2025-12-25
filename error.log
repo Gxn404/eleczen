@@ -1,7 +1,0 @@
-TypeError: Cannot read properties of undefined (reading 'substring')
-TypeError: Cannot read properties of undefined (reading 'substring')
-    at test (file:///C:/Users/Gagan%20Shetty/projects/eleczen/scripts/test-kicad-parser.js:54:67)
-    at file:///C:/Users/Gagan%20Shetty/projects/eleczen/scripts/test-kicad-parser.js:77:1
-    at ModuleJob.run (node:internal/modules/esm/module_job:377:25)
-    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:689:26)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)

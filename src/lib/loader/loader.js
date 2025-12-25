@@ -1,6 +1,5 @@
-import { supabase } from '@/lib/supabase';
-import { parseEZL } from '@/lib/eleczen-dsl/library-parser';
-import { globalComponentLoader } from './ComponentLoader';
+import { supabase } from '../../../supabase/supabase';
+import { globalComponentLoader } from './component';
 
 /**
  * LibraryLoader

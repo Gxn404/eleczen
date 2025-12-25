@@ -41,7 +41,25 @@ export const parseSpice = (content) => {
         const parts = line.split(/\s+/);
         const directive = parts[0].toLowerCase();
 
-        if (directive === '.model') {
+        if (directive === '.subckt') {
+            // .subckt <name> <nodes...>
+            const name = parts[1];
+            const nodes = parts.slice(2);
+            currentBlock = {
+                name,
+                nodes,
+                lines: []
+            };
+            blockType = 'subckt';
+        } else if (directive === '.ends') {
+            if (currentBlock && blockType === 'subckt') {
+                subckts.push(currentBlock);
+                currentBlock = null;
+                blockType = null;
+            }
+        } else if (currentBlock) {
+            currentBlock.lines.push(line);
+        } else if (directive === '.model') {
             // .model <name> <type> (<params>)
             // Example: .model 1N4148 D (Is=2.682n N=1.836 Rs=.5664 ...)
             if (parts.length < 3) return;
@@ -61,26 +79,8 @@ export const parseSpice = (content) => {
                 params,
                 raw: line
             });
-        } else if (directive === '.subckt') {
-            // .subckt <name> <nodes...>
-            const name = parts[1];
-            const nodes = parts.slice(2);
-            currentBlock = {
-                name,
-                nodes,
-                lines: []
-            };
-            blockType = 'subckt';
-        } else if (directive === '.ends') {
-            if (currentBlock && blockType === 'subckt') {
-                subckts.push(currentBlock);
-                currentBlock = null;
-                blockType = null;
-            }
         } else {
-            if (currentBlock) {
-                currentBlock.lines.push(line);
-            } else if (directive.startsWith('.')) {
+            if (directive.startsWith('.')) {
                 globals.push(line);
             }
         }

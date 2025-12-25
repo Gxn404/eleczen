@@ -20,7 +20,7 @@ export function generateEZC(component) {
             if (Array.isArray(value)) {
                 const arrayStr = value.map(v => `"${v}"`).join(', ');
                 lines.push(`        ${key} [${arrayStr}]`);
-            } else if (value) {
+            } else if (value !== undefined && value !== null) {
                 if (typeof value === 'string' && (value.includes('"') || value.includes('\n'))) {
                     lines.push(`        ${key} <<EOF`);
                     lines.push(value);
@@ -41,7 +41,8 @@ export function generateEZC(component) {
             // pin {name} direction {dir} order {num}
             let line = `        pin "${name}"`;
             if (pin.direction) line += ` direction ${pin.direction}`;
-            if (pin.number) line += ` order ${pin.number}`;
+            const order = pin.order || pin.number;
+            if (order !== undefined) line += ` order ${order}`;
             lines.push(line);
         }
         lines.push('    end');

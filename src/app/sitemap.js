@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../../supabase/supabase";
 export default async function sitemap() {
     // Base URL
     const baseUrl = 'https://eleczen.app';

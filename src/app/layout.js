@@ -4,6 +4,7 @@ import Providers from "@/components/Providers";
 import ToastProvider from "@/components/ToastProvider";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
+import { Analytics } from "@vercel/analytics/next";
 
 // Using system fonts via CSS variables defined in globals.css
 
@@ -136,6 +137,7 @@ export default function RootLayout({ children }) {
           <Navbar />
           <main className="pt-16 min-h-screen">{children}</main>
           <BottomNav />
+          <Analytics />
         </Providers>
       </body>
       <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3992023609980021"

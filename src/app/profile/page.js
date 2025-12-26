@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { auth } from "../../../api/src/app/lib/auth/auth";
 import ProfileClient from "./ProfileClient";
 
 export default async function ProfilePage() {

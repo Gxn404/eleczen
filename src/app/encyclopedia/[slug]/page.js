@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, ExternalLink, Zap } from "lucide-react";
-import dbConnect from "@/lib/db";
-import Component from "@/models/Component";
+import dbConnect from "../../../../api/src/app/lib/db";
+import Component from "../../../../api/src/app/lib/models/Component";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ComponentDetailClient from "./ComponentDetailClient";
 

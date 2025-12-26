@@ -14,6 +14,8 @@ export default async function sitemap() {
         '/blog',
         '/about',
         '/contact',
+        '/terms',
+        '/privacy',
         '/design',
         '/tools/capacitor',
         '/tools/ohm',

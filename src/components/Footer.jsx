@@ -46,7 +46,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/showcase"
+                  href="/projects"
                   className="hover:text-neon-blue transition-colors"
                 >
                   Community Showcase

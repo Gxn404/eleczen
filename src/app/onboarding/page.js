@@ -63,7 +63,7 @@ export default function Home() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-300">
-                        <Link href="/design/circuit">
+                        <Link href="/design">
                             <button className="px-8 py-4 rounded-xl bg-neon-blue text-black font-bold text-lg hover:bg-white transition-all shadow-[0_0_20px_rgba(0,243,255,0.4)] hover:shadow-[0_0_30px_rgba(0,243,255,0.6)] flex items-center gap-2 group">
                                 Start Designing <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </button>
@@ -81,7 +81,7 @@ export default function Home() {
             <section className="py-24 bg-black/50 relative">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <Link href="/design/circuit" className="glass-panel p-8 rounded-2xl border border-white/10 hover:border-neon-blue/50 transition-all duration-300 group hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(0,243,255,0.2)]">
+                        <Link href="/design" className="glass-panel p-8 rounded-2xl border border-white/10 hover:border-neon-blue/50 transition-all duration-300 group hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(0,243,255,0.2)]">
                             <div className="w-14 h-14 rounded-xl bg-neon-blue/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-neon-blue/20">
                                 <Zap className="w-8 h-8 text-neon-blue" />
                             </div>

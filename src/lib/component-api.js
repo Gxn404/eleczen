@@ -1,5 +1,5 @@
-import dbConnect from "@/lib/db";
-import Component from "@/models/Component";
+import dbConnect from "../../api/src/app/lib/db";
+import Component from "../../api/src/app/lib/models/Component";
 
 export async function getComponents(query = {}) {
     await dbConnect();

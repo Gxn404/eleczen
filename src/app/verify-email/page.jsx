@@ -17,6 +17,50 @@ function VerifyEmailContent() {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
+    const [timer, setTimer] = useState(60);
+    const [canResend, setCanResend] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
+
+    useEffect(() => {
+        let interval;
+        if (timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        } else {
+            setCanResend(true);
+        }
+        return () => clearInterval(interval);
+    }, [timer]);
+
+    const handleResend = async () => {
+        setResendLoading(true);
+        setError("");
+        setMessage("");
+
+        try {
+            const res = await fetch("/api/auth/send-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setMessage("Code resent successfully!");
+                setTimer(60);
+                setCanResend(false);
+            } else {
+                setError(data.message || "Failed to resend code");
+            }
+        } catch (err) {
+            setError("Failed to resend code");
+        } finally {
+            setResendLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -117,6 +161,22 @@ function VerifyEmailContent() {
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (mode === 'reset' ? "Reset Password" : "Verify Account")}
                 </button>
             </form>
+
+            <div className="mt-6 text-center">
+                <button
+                    onClick={handleResend}
+                    disabled={!canResend || resendLoading}
+                    className="text-sm text-neon-blue hover:text-white transition-colors disabled:text-gray-600 disabled:cursor-not-allowed"
+                >
+                    {resendLoading ? (
+                        <span className="flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Resending...</span>
+                    ) : canResend ? (
+                        "Resend Code"
+                    ) : (
+                        `Resend code in ${timer}s`
+                    )}
+                </button>
+            </div>
 
             <div className="mt-6 text-center">
                 <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">

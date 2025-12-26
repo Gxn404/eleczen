@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Edit } from "lucide-react";
-import { auth } from "@/auth";
+import { auth } from "../../../../api/src/app/lib/auth/auth";
 import JsonLd from "@/components/JsonLd";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CommentsSection from "@/components/CommentsSection";

@@ -19,6 +19,7 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
     "@tailwindcss/typography": "^0.5.19",
+    "@vercel/analytics": "^1.6.1",
     "bcryptjs": "^3.0.3",
     "circuit-json": "^0.0.326",
     "clsx": "^2.1.1",

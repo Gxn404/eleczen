@@ -14,6 +14,13 @@ export default async function sitemap() {
         '/blog',
         '/about',
         '/contact',
+        '/design',
+        '/tools/capacitor',
+        '/tools/ohm',
+        '/tools/recognizer',
+        '/tools/resistor',
+        '/tools/scanner',
+        '/tools/smart-search',
     ].map((route) => ({
         url: `${baseUrl}${route}`,
         lastModified: new Date(),

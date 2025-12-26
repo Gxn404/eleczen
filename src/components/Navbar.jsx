@@ -8,6 +8,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
+  { name: "Home", href: "/" },
   { name: "Design", href: "/design" },
   { name: "Tools", href: "/tools" },
   { name: "Encyclopedia", href: "/encyclopedia" },

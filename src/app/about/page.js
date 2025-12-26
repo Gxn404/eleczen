@@ -4,6 +4,23 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 export const metadata = {
     title: "About ElecZen | Our Mission & Team",
     description: "Learn about the mission behind ElecZen and the team building the future of electronics design.",
+    openGraph: {
+        title: "About ElecZen | Our Mission & Team",
+        description:
+            "Learn about the mission behind ElecZen and the team building the future of electronics design.",
+        url: "https://eleczen.app/about",
+        siteName: "ElecZen",
+        images: ["/eleczen_512.png"],
+        locale: "en_US",
+        type: "website",
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "About ElecZen | Our Mission & Team",
+        description:
+            "Learn about the mission behind ElecZen and the team building the future of electronics design.",
+        images: ["/eleczen_512.png"],
+    },
 };
 
 export default function AboutPage() {

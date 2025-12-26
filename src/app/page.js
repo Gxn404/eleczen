@@ -88,7 +88,7 @@ export default function Dashboard() {
                                     </h2>
                                     <Link
                                         href="/projects"
-                                        className="ml-auto text-sm font-medium text-neon-blue hover:text-white transition-colors flex items-center gap-1"
+                                        className="ml-auto text-sm font-bold text-neon-blue hover:text-white transition-colors flex items-center gap-1"
                                     >
                                         View All <ArrowRight className="w-4 h-4" />
                                     </Link>
@@ -110,7 +110,7 @@ export default function Dashboard() {
                                                 <h3 className="text-xl font-bold text-white mb-2">
                                                     New Circuit
                                                 </h3>
-                                                <p className="text-sm text-gray-400">
+                                                <p className="text-sm text-gray-300 font-medium">
                                                     Start designing from scratch
                                                 </p>
                                             </div>
@@ -122,13 +122,13 @@ export default function Dashboard() {
                                         variants={itemVariants}
                                         className="glass-panel rounded-2xl p-6 flex flex-col items-center justify-center text-center min-h-[250px]"
                                     >
-                                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
-                                            <Zap className="w-6 h-6 text-gray-500" />
+                                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-4 border border-white/20">
+                                            <Zap className="w-6 h-6 text-gray-400" />
                                         </div>
-                                        <h3 className="text-lg font-semibold text-gray-300 mb-1">
+                                        <h3 className="text-lg font-bold text-gray-200 mb-1">
                                             No recent circuits
                                         </h3>
-                                        <p className="text-sm text-gray-500 max-w-[200px]">
+                                        <p className="text-sm text-gray-400 max-w-[200px] font-medium">
                                             Your latest projects will appear here for quick access
                                         </p>
                                     </motion.div>
@@ -196,7 +196,7 @@ export default function Dashboard() {
                                             <motion.div
                                                 variants={itemVariants}
                                                 whileHover={{ scale: 1.02, y: -2 }}
-                                                className="glass-panel rounded-2xl p-6 transition-all duration-300 hover:border-white/20 relative overflow-hidden h-full flex flex-col group-hover:shadow-lg"
+                                                className="glass-panel rounded-2xl p-6 transition-all duration-300 hover:border-white/30 relative overflow-hidden h-full flex flex-col group-hover:shadow-lg border-white/10"
                                             >
                                                 <div
                                                     className={`w-12 h-12 rounded-xl ${action.bg} flex items-center justify-center mb-4 border ${action.border} group-hover:scale-110 transition-transform duration-300`}
@@ -208,10 +208,10 @@ export default function Dashboard() {
                                                 <h3 className="text-lg font-bold text-white mb-2">
                                                     {action.title}
                                                 </h3>
-                                                <p className="text-sm text-gray-400 mb-6 flex-grow leading-relaxed">
+                                                <p className="text-sm text-gray-300 mb-6 flex-grow leading-relaxed font-medium">
                                                     {action.desc}
                                                 </p>
-                                                <div className="flex items-center text-xs font-bold text-gray-500 group-hover:text-white transition-colors mt-auto uppercase tracking-wider">
+                                                <div className="flex items-center text-xs font-bold text-gray-400 group-hover:text-white transition-colors mt-auto uppercase tracking-wider">
                                                     Open Tool{" "}
                                                     <ArrowRight className="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" />
                                                 </div>
@@ -262,18 +262,18 @@ export default function Dashboard() {
                                         },
                                     ].map((post, i) => (
                                         <Link href="/blog" key={i} className="block group">
-                                            <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 transition-colors">
+                                            <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 hover:bg-white/10 transition-colors">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-[10px] uppercase font-bold text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full border border-neon-blue/10">
+                                                    <span className="text-[10px] uppercase font-bold text-neon-blue bg-neon-blue/10 px-2 py-0.5 rounded-full border border-neon-blue/20">
                                                         {post.cat}
                                                     </span>
                                                 </div>
-                                                <h4 className="text-sm font-bold text-gray-200 group-hover:text-white line-clamp-2 mb-2">
+                                                <h4 className="text-sm font-bold text-gray-100 group-hover:text-white line-clamp-2 mb-2">
                                                     {post.title}
                                                 </h4>
-                                                <div className="text-xs text-gray-500 flex items-center gap-2 font-medium">
+                                                <div className="text-xs text-gray-400 flex items-center gap-2 font-medium">
                                                     <span>{post.date}</span>
-                                                    <span className="w-0.5 h-0.5 rounded-full bg-gray-600" />
+                                                    <span className="w-0.5 h-0.5 rounded-full bg-gray-500" />
                                                     <span>{post.read} read</span>
                                                 </div>
                                             </div>

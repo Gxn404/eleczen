@@ -27,6 +27,11 @@ export const metadata = {
     "IoT",
     "Arduino",
     "ESP32",
+    "resistor color code",
+    "ohm's law calculator",
+    "capacitor code decoder",
+    "circuit scanner",
+    "schematic recognizer",
   ],
   authors: [{ name: "ElecZen Team" }],
   creator: "ElecZen",
@@ -57,17 +62,20 @@ export const metadata = {
     other: [{ rel: "mask-icon", url: "/eleczen.svg" }],
   },
   openGraph: {
-    title: "ElecZen",
+    title: {
+      default: "ElecZen | AI-Powered Electronics Platform",
+      template: "%s | ElecZen",
+    },
     description:
-      "Design, simulate, and discover components with AI-powered tools.",
+      "The ultimate platform for electronics engineers. Design circuits, simulate in real-time, and discover components with AI-powered tools.",
     url: "https://eleczen.app",
     siteName: "ElecZen",
     images: [
       {
         url: "/eleczen_512.png",
-        width: 1200,
-        height: 630,
-        alt: "ElecZen Platform Preview",
+        width: 512,
+        height: 512,
+        alt: "ElecZen Platform Logo",
       },
     ],
     locale: "en_US",
@@ -75,8 +83,11 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ElecZen | AI-Powered Electronics Platform",
-    description: "The ultimate platform for electronics engineers.",
+    title: {
+      default: "ElecZen | AI-Powered Electronics Platform",
+      template: "%s | ElecZen",
+    },
+    description: "The ultimate platform for electronics engineers. Design, simulate, and discover components with AI-powered tools.",
     creator: "@eleczen",
     images: ["/eleczen_512.png"],
   },
@@ -95,6 +106,7 @@ export const metadata = {
     capable: true,
     title: "ElecZen",
     statusBarStyle: "black-translucent",
+    startupImage: ["/eleczen_512.png"],
   },
 };
 

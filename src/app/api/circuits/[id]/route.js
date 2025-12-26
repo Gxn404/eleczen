@@ -3,6 +3,36 @@ import dbConnect from "@/lib/db";
 import Circuit from "@/models/Circuit";
 import { auth } from "@/auth";
 
+/**
+ * @swagger
+ * /api/circuits/{id}:
+ *   get:
+ *     tags:
+ *       - Circuits
+ *     summary: Get a single circuit
+ *     description: Retrieve a circuit by ID. Public circuits are accessible to all, private circuits require ownership.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Circuit ID
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Circuit details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Circuit'
+ *       403:
+ *         description: Forbidden - private circuit
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       500:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 export async function GET(request, { params }) {
     try {
         const { id } = params;
@@ -29,6 +59,55 @@ export async function GET(request, { params }) {
     }
 }
 
+/**
+ * @swagger
+ * /api/circuits/{id}:
+ *   put:
+ *     tags:
+ *       - Circuits
+ *     summary: Update a circuit
+ *     description: Update an existing circuit. Requires authentication and ownership.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Circuit ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               isPublic:
+ *                 type: boolean
+ *               data:
+ *                 type: object
+ *                 description: Circuit schematic data
+ *     responses:
+ *       200:
+ *         description: Updated circuit
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Circuit'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Forbidden - not the owner
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       500:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 export async function PUT(request, { params }) {
     try {
         const session = await auth();
@@ -60,6 +139,43 @@ export async function PUT(request, { params }) {
     }
 }
 
+/**
+ * @swagger
+ * /api/circuits/{id}:
+ *   delete:
+ *     tags:
+ *       - Circuits
+ *     summary: Delete a circuit
+ *     description: Delete a circuit. Requires authentication and ownership or admin role.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Circuit ID
+ *     responses:
+ *       200:
+ *         description: Circuit deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Circuit deleted"
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Forbidden - not the owner
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       500:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 export async function DELETE(request, { params }) {
     try {
         const session = await auth();

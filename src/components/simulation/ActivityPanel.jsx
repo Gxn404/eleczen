@@ -1,6 +1,5 @@
 "use client";
-import React, { useState } from 'react';
-import { LibraryChooser } from './LibraryChooser';
+import { useState } from 'react';
 
 const ActivityPanel = ({ activeDevices = [], onSelectDevice, onOpenLibrary, onPickComponent }) => {
     const [selectedDevice, setSelectedDevice] = useState(null);

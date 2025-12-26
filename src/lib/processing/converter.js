@@ -54,7 +54,8 @@ export class ComponentProcessor {
         // 2. Generate EZC for each component
         const components = [];
         const index = {};
-        const categories = new Set();
+        let categories = new Set();
+        let svg = null;
 
         const hasAnySymbol = Array.from(this.components.values()).some(c => !!c.symbol);
 
@@ -66,8 +67,12 @@ export class ComponentProcessor {
                 continue;
             }
 
-            const { component, svg } = this.generateComponentEZC(name, data);
+            const { component, svg: compSvg } = this.generateComponentEZC(name, data);
             components.push({ name, component });
+
+            if (compSvg && !svg) {
+                svg = compSvg;
+            }
 
             // Build index for library using the component's category
             index[name] = component.category;
@@ -162,7 +167,7 @@ export class ComponentProcessor {
     }
 
     generateComponentEZC(name, data) {
-        let svg ='';
+        let svg = '';
         // Create the component object structure for generator
         const component = {
             name: name,
@@ -262,6 +267,6 @@ export class ComponentProcessor {
         }
 
         // Return the DSL component object directly
-        return component, svg;
+        return { component, svg };
     }
 }

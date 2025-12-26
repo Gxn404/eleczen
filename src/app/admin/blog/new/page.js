@@ -14,7 +14,7 @@ export default function NewBlogPostPage() {
     slug: "",
     excerpt: "",
     content: "",
-    coverImage: "",
+    cover_image: "",
     tags: "",
   });
 
@@ -33,10 +33,16 @@ export default function NewBlogPostPage() {
     setSaving(true);
 
     try {
+      // Format tags as array
+      const payload = {
+        ...formData,
+        tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+      };
+
       const res = await fetch("/api/blog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -128,8 +134,8 @@ export default function NewBlogPostPage() {
             </label>
             <input
               type="text"
-              value={formData.coverImage}
-              onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
+              value={formData.cover_image}
+              onChange={(e) => setFormData({ ...formData, cover_image: e.target.value })}
               className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue outline-none"
               placeholder="https://example.com/image.jpg"
             />

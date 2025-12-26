@@ -93,9 +93,6 @@ export default function Navbar() {
                           <User className="w-4 h-4" />
                         </div>
                       )}
-                      <span className="text-sm font-medium text-gray-200">
-                        {session.user?.name?.split(" ")[0] || "Profile"}
-                      </span>
                     </motion.div>
                   </Link>
                 </div>

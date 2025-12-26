@@ -1,96 +1,145 @@
--- Enable necessary extensions
-create extension if not exists "uuid-ossp";
-create extension if not exists "pg_trgm";
+-- ElecZen Component Library Database Schema
+-- Run this in your Supabase SQL Editor to create the necessary tables
 
--- Component Libraries Table
-create table component_libraries (
-  id uuid primary key default uuid_generate_v4(),
-  file_path text not null,
-  library_type text not null check (library_type in ('spice', 'kicad', 'ltspice', 'custom')),
-  uploaded_by uuid references auth.users(id),
-  uploaded_at timestamp with time zone default now(),
-  version text,
-  status text check (status in ('ok', 'warning', 'error', 'processing')),
-  component_count int default 0,
-  parsed_metadata jsonb,
-  warnings jsonb,
-  errors jsonb,
-  dependencies jsonb,
-  checksum text,
-  is_public boolean default false
+-- 1. Component Libraries Table
+-- Stores metadata about uploaded library files
+CREATE TABLE IF NOT EXISTS component_libraries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    file_path TEXT NOT NULL UNIQUE,
+    library_type TEXT NOT NULL, -- 'ezc', 'ezl', 'spice', 'processed', etc.
+    status TEXT DEFAULT 'ok', -- 'ok', 'error', 'processing'
+    component_count INTEGER DEFAULT 0,
+    parsed_metadata JSONB,
+    is_public BOOLEAN DEFAULT false,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Library Index Table (Flattened components)
-create table library_index (
-  id uuid primary key default uuid_generate_v4(),
-  library_id uuid references component_libraries(id) on delete cascade,
-  name text not null,
-  type text not null, -- diode, bjt, mosfet, opamp, subckt, etc.
-  prefix text,
-  pins jsonb,
-  parameters jsonb,
-  source_file text,
-  tags text[],
-  search_blob tsvector
+-- 2. Library Index Table
+-- Searchable index of individual components
+CREATE TABLE IF NOT EXISTS library_index (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    library_id UUID REFERENCES component_libraries(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    type TEXT, -- 'resistor', 'capacitor', 'ic', 'subckt', etc.
+    category TEXT, -- 'Passive/Resistor', 'ICs/Timer', etc.
+    parameters JSONB,
+    pins JSONB,
+    source_file TEXT,
+    search_blob TEXT, -- Searchable text blob
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Indexes for Search
-create index idx_library_index_search on library_index using gin(search_blob);
-create index idx_library_index_name_trgm on library_index using gin(name gin_trgm_ops);
-create index idx_library_index_tags on library_index using gin(tags);
-create index idx_component_libraries_checksum on component_libraries(checksum);
+-- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_library_index_name ON library_index(name);
+CREATE INDEX IF NOT EXISTS idx_library_index_type ON library_index(type);
+CREATE INDEX IF NOT EXISTS idx_library_index_category ON library_index(category);
+CREATE INDEX IF NOT EXISTS idx_library_index_library_id ON library_index(library_id);
+CREATE INDEX IF NOT EXISTS idx_component_libraries_user_id ON component_libraries(user_id);
 
--- RLS Policies
+-- Enable Row Level Security (RLS)
+ALTER TABLE component_libraries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE library_index ENABLE ROW LEVEL SECURITY;
 
--- Enable RLS
-alter table component_libraries enable row level security;
-alter table library_index enable row level security;
+-- RLS Policies for component_libraries
+-- Allow users to read all public libraries
+CREATE POLICY "Public libraries are viewable by everyone"
+    ON component_libraries FOR SELECT
+    USING (is_public = true);
 
--- Policies for component_libraries
-create policy "Public libraries are viewable by everyone"
-  on component_libraries for select
-  using ( is_public = true );
+-- Allow users to read their own libraries
+CREATE POLICY "Users can view their own libraries"
+    ON component_libraries FOR SELECT
+    USING (auth.uid() = user_id);
 
-create policy "Users can view their own private libraries"
-  on component_libraries for select
-  using ( auth.uid() = uploaded_by );
+-- Allow users to insert their own libraries
+CREATE POLICY "Users can insert their own libraries"
+    ON component_libraries FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
 
-create policy "Admins can insert libraries"
-  on component_libraries for insert
-  with check ( 
-    -- Assuming a custom claim or role check, simplified here:
-    auth.role() = 'service_role' or auth.uid() in (select id from auth.users where is_super_admin = true) -- Hypothetical check
-    -- For now, allow authenticated users to upload their own
-    or auth.uid() = uploaded_by
-  );
+-- Allow users to update their own libraries
+CREATE POLICY "Users can update their own libraries"
+    ON component_libraries FOR UPDATE
+    USING (auth.uid() = user_id);
 
-create policy "Admins can update libraries"
-  on component_libraries for update
-  using ( auth.uid() = uploaded_by );
+-- Allow users to delete their own libraries
+CREATE POLICY "Users can delete their own libraries"
+    ON component_libraries FOR DELETE
+    USING (auth.uid() = user_id);
 
-create policy "Admins can delete libraries"
-  on component_libraries for delete
-  using ( auth.uid() = uploaded_by );
+-- RLS Policies for library_index
+-- Allow reading from public libraries
+CREATE POLICY "Public library components are viewable"
+    ON library_index FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM component_libraries
+            WHERE component_libraries.id = library_index.library_id
+            AND component_libraries.is_public = true
+        )
+    );
 
--- Policies for library_index (inherit from library)
-create policy "Public index viewable"
-  on library_index for select
-  using ( exists (
-    select 1 from component_libraries
-    where component_libraries.id = library_index.library_id
-    and component_libraries.is_public = true
-  ));
+-- Allow reading from user's own libraries
+CREATE POLICY "Users can view their own library components"
+    ON library_index FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM component_libraries
+            WHERE component_libraries.id = library_index.library_id
+            AND component_libraries.user_id = auth.uid()
+        )
+    );
 
-create policy "Private index viewable by owner"
-  on library_index for select
-  using ( exists (
-    select 1 from component_libraries
-    where component_libraries.id = library_index.library_id
-    and component_libraries.uploaded_by = auth.uid()
-  ));
+-- Allow inserting into user's own libraries
+CREATE POLICY "Users can insert into their own libraries"
+    ON library_index FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM component_libraries
+            WHERE component_libraries.id = library_index.library_id
+            AND component_libraries.user_id = auth.uid()
+        )
+    );
 
--- Storage Bucket Policies (Conceptual - apply in Supabase Dashboard)
--- Bucket: libraries
--- Policy: "Public Access" -> false
--- Policy: "Authenticated Upload" -> true
--- Policy: "Owner Delete" -> true
+-- Allow updating user's own library components
+CREATE POLICY "Users can update their own library components"
+    ON library_index FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM component_libraries
+            WHERE component_libraries.id = library_index.library_id
+            AND component_libraries.user_id = auth.uid()
+        )
+    );
+
+-- Allow deleting user's own library components
+CREATE POLICY "Users can delete their own library components"
+    ON library_index FOR DELETE
+    USING (
+        EXISTS (
+            SELECT 1 FROM component_libraries
+            WHERE component_libraries.id = library_index.library_id
+            AND component_libraries.user_id = auth.uid()
+        )
+    );
+
+-- Create a function to update the updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create trigger to auto-update updated_at
+CREATE TRIGGER update_component_libraries_updated_at
+    BEFORE UPDATE ON component_libraries
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Grant necessary permissions (adjust as needed for your setup)
+-- These might not be needed depending on your Supabase configuration
+-- GRANT ALL ON component_libraries TO authenticated;
+-- GRANT ALL ON library_index TO authenticated;

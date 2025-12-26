@@ -3,6 +3,31 @@ import dbConnect from "@/lib/db";
 import Component from "@/models/Component";
 import { auth } from "@/auth";
 
+/**
+ * @swagger
+ * /api/components/{id}:
+ *   get:
+ *     tags:
+ *       - Components
+ *     summary: Get a single component
+ *     description: Retrieve a component by ID or slug
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Component ID or slug
+ *     responses:
+ *       200:
+ *         description: Component details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Component'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 export async function GET(request, { params }) {
     try {
         const { id } = params;
@@ -26,6 +51,36 @@ export async function GET(request, { params }) {
     }
 }
 
+/**
+ * @swagger
+ * /api/components/{id}:
+ *   put:
+ *     tags:
+ *       - Components
+ *     summary: Update a component
+ *     description: Update component details. Requires admin authentication.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Component'
+ *     responses:
+ *       200:
+ *         description: Updated component
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 export async function PUT(request, { params }) {
     try {
         const session = await auth();
@@ -56,6 +111,30 @@ export async function PUT(request, { params }) {
     }
 }
 
+/**
+ * @swagger
+ * /api/components/{id}:
+ *   delete:
+ *     tags:
+ *       - Components
+ *     summary: Delete a component
+ *     description: Delete a component. Requires admin authentication.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Component deleted
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 export async function DELETE(request, { params }) {
     try {
         const session = await auth();

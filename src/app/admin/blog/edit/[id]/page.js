@@ -16,7 +16,7 @@ export default function EditBlogPostPage({ params }) {
         slug: "",
         excerpt: "",
         content: "",
-        coverImage: "",
+        cover_image: "",
         tags: "",
     });
 
@@ -26,23 +26,6 @@ export default function EditBlogPostPage({ params }) {
 
     const fetchPost = async () => {
         try {
-            // We can reuse the public API or create a specific admin one.
-            // For now, let's assume we can fetch by ID via a new endpoint or reusing existing logic if available.
-            // Since we don't have a direct "get by ID" API exposed yet for client, I'll assume we need to add one or use server actions.
-            // For simplicity in this task, I'll fetch via the public blog API if possible, or just mock the data fetch if API is missing.
-            // Wait, I didn't create a GET /api/blog/[id] route.
-            // I'll assume for this task I should have created it or I'll use a server action.
-            // Let's try to fetch from the blog list and filter (inefficient but works for small apps) or better, add a route.
-            // Actually, I'll add a quick fetch to the existing blog route if I can, or just assume I can fetch it.
-            // Let's use a direct fetch to a new endpoint I'll create implicitly or just handle it here.
-            // I'll create a simple GET route for this page in the same step if needed, but let's try to hit /api/blog?id={id} if I modify the blog route.
-            // I'll just assume I can fetch it for now to scaffold the UI.
-
-            // REALITY CHECK: I need to fetch the post data.
-            // I will assume there is an endpoint or I will create a simple one.
-            // Let's assume I can fetch `/api/blog/${id}` (I'll need to ensure this route exists or create it).
-            // I'll create the route `src/app/api/blog/[id]/route.js` in the next tool call if it doesn't exist.
-
             const res = await fetch(`/api/blog/${id}`);
             if (!res.ok) throw new Error("Failed to fetch post");
             const post = await res.json();
@@ -52,7 +35,7 @@ export default function EditBlogPostPage({ params }) {
                 slug: post.slug,
                 excerpt: post.excerpt || "",
                 content: post.content,
-                coverImage: post.coverImage || "",
+                cover_image: post.cover_image || "",
                 tags: post.tags ? post.tags.join(", ") : "",
             });
         } catch (error) {
@@ -168,8 +151,8 @@ export default function EditBlogPostPage({ params }) {
                         </label>
                         <input
                             type="text"
-                            value={formData.coverImage}
-                            onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
+                            value={formData.cover_image}
+                            onChange={(e) => setFormData({ ...formData, cover_image: e.target.value })}
                             className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue outline-none"
                         />
                     </div>

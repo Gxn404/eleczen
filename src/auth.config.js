@@ -5,12 +5,18 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: nextUrl }) {
       const isLoggedIn = !!auth?.user;
-      const isOnDashboard = nextUrl.nextUrl.pathname.startsWith("/admin");
-      if (isOnDashboard) {
+      const isOnAdmin = nextUrl.nextUrl.pathname.startsWith("/admin");
+      const isOnLogin = nextUrl.nextUrl.pathname.startsWith("/login");
+
+      if (isOnAdmin) {
         if (isLoggedIn) return true;
         return false; // Redirect unauthenticated users to login page
       } else if (isLoggedIn) {
-        return Response.redirect(new URL('/dashboard', nextUrl));
+        // If logged in and on login page, redirect to dashboard
+        if (isOnLogin) {
+          // Use nextUrl.nextUrl.origin as the base to ensure we have a valid absolute URL
+          return Response.redirect(new URL('/', nextUrl.nextUrl.origin));
+        }
       }
       return true;
     },

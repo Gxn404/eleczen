@@ -1,66 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useLiteSimStore } from '@/lib/litesim/state';
 
 const ConsolePanel = () => {
-    const [activeTab, setActiveTab] = useState('console');
     const { logs, clearLogs } = useLiteSimStore();
     const scrollRef = useRef(null);
 
-    // Auto-scroll to bottom
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [logs, activeTab]);
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }, [logs]);
 
     return (
-        <div className="w-full h-full flex flex-col bg-gray-900">
-            <div className="flex items-center justify-between border-b border-gray-800 pr-2">
-                <div className="flex items-center">
-                    <button
-                        onClick={() => setActiveTab('console')}
-                        className={`px-4 py-2 text-xs font-medium transition-colors ${activeTab === 'console' ? 'text-cyan-400 border-b-2 border-cyan-500 bg-cyan-950/20' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                        Console
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('spice')}
-                        className={`px-4 py-2 text-xs font-medium transition-colors ${activeTab === 'spice' ? 'text-cyan-400 border-b-2 border-cyan-500 bg-cyan-950/20' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                        SPICE Log
-                    </button>
-                </div>
-                <button
-                    onClick={clearLogs}
-                    className="text-xs text-gray-600 hover:text-red-400 transition-colors"
-                    title="Clear Logs"
-                >
-                    Clear
-                </button>
+        <div className="w-full h-full flex flex-col font-mono text-xs">
+            <div className="flex justify-between items-center px-4 py-2 border-b border-white/10 bg-black/40">
+                <span className="text-gray-500 font-bold">CONSOLE</span>
+                <button onClick={clearLogs} className="text-gray-600 hover:text-white transition-colors">Clear</button>
             </div>
 
-            <div
-                ref={scrollRef}
-                className="flex-1 p-2 font-mono text-xs overflow-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
-            >
-                {activeTab === 'console' && (
-                    <div className="space-y-1">
-                        {logs.map((log, i) => (
-                            <div key={i} className={`${log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : 'text-gray-400'}`}>
-                                <span className="opacity-50 mr-2">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
-                                {log.message}
-                            </div>
-                        ))}
-                        {logs.length === 0 && <div className="text-gray-700 italic">No logs...</div>}
+            <div ref={scrollRef} className="flex-1 overflow-auto p-2 space-y-1 text-gray-400">
+                {logs.length === 0 && <div className="text-gray-800 italic px-2">No logs active</div>}
+
+                {logs.map((log, i) => (
+                    <div key={i} className={`px-2 py-0.5 border-l-2 pl-2 ${log.type === 'error' ? 'border-red-500 text-red-400' :
+                            log.type === 'warn' ? 'border-yellow-500 text-yellow-500' :
+                                'border-gray-800'
+                        }`}>
+                        <span className="opacity-40 mr-2">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</span>
+                        {log.message}
                     </div>
-                )}
-                {activeTab === 'spice' && (
-                    <div className="text-gray-500">
-                        <div>&gt; eecircuit-engine active</div>
-                        <div>&gt; SPICE Netlist generation enabled</div>
-                        {/* Future: Show raw netlist here */}
-                    </div>
-                )}
+                ))}
             </div>
         </div>
     );

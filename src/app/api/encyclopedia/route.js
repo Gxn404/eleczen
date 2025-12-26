@@ -1,6 +1,58 @@
 import { NextResponse } from "next/server";
 import { getComponents } from "@/lib/component-api";
 
+/**
+ * @swagger
+ * /api/encyclopedia:
+ *   get:
+ *     tags:
+ *       - Encyclopedia
+ *     summary: Search electronics encyclopedia
+ *     description: Search for electronic components and concepts in the knowledge base
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search query
+ *         example: "resistor"
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [passive, active, digital, analog, power, sensors]
+ *         description: Filter by category
+ *         example: "passive"
+ *     responses:
+ *       200:
+ *         description: List of encyclopedia entries
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   title:
+ *                     type: string
+ *                     example: "Resistor"
+ *                   description:
+ *                     type: string
+ *                     example: "A passive two-terminal electrical component..."
+ *                   category:
+ *                     type: string
+ *                     example: "passive"
+ *                   image:
+ *                     type: string
+ *                     format: uri
+ *                   content:
+ *                     type: string
+ *                     description: Detailed content in markdown
+ *       500:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -8,12 +60,6 @@ export async function GET(request) {
     const category = searchParams.get("category");
 
     const components = await getComponents({ search, category });
-
-    // Return array directly to match blog pattern or wrap in object if preferred
-    // The client expects { success: true, data: [...] } based on previous code, 
-    // but let's stick to simple array for consistency with new blog API if possible.
-    // However, the client code I saw expects `data.success`. I'll update client to handle array or object.
-    // Actually, let's just return the array directly like the blog API.
 
     return NextResponse.json(components);
   } catch (error) {

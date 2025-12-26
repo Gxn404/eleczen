@@ -9,52 +9,59 @@ import { usePreventDevTools } from '@/hooks/usePreventDevTools';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 const ResizeHandle = ({ className = "" }) => (
-    <PanelResizeHandle className={`w-1 bg-white/5 hover:bg-cyan-500/50 transition-colors data-[resize-handle-active]:bg-cyan-500 ${className}`} />
+    <PanelResizeHandle className={`w-1 bg-white/5 data-[resize-handle-active]:bg-neon-blue outline-none relative z-50 hover:bg-neon-blue/20 transition-colors ${className}`} />
 );
 
 const ResizeHandleHorizontal = ({ className = "" }) => (
-    <PanelResizeHandle className={`h-1 bg-white/5 hover:bg-cyan-500/50 transition-colors data-[resize-handle-active]:bg-cyan-500 ${className}`} />
+    <PanelResizeHandle className={`h-1 bg-white/5 data-[resize-handle-active]:bg-neon-blue outline-none relative z-50 hover:bg-neon-blue/20 transition-colors ${className}`} />
 );
 
 const Workbench = () => {
     usePreventDevTools();
 
     return (
-        <div className="h-screen w-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-gray-900 via-black to-gray-950 text-cyan-50 flex flex-col overflow-hidden font-sans selection:bg-cyan-500/30">
+        <div className="h-screen w-screen bg-black text-white flex flex-col overflow-hidden font-sans selection:bg-neon-blue/30 relative">
+            {/* Lightweight Background: Single gradient, no heavy blurs */}
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black pointer-events-none" />
+
             {/* Top Navbar */}
-            <div className="h-12 border-b border-white/10 bg-white/5 backdrop-blur-md z-50">
+            <div className="h-12 border-b border-white/10 bg-black/60 z-50 flex items-center">
                 <NavbarPanel />
             </div>
 
             {/* Main Workspace Grid */}
-            <div className="flex-1 flex overflow-hidden">
-                <aside className="w-16 flex flex-col items-center py-4 bg-gray-950 border-r border-white/10 z-50">
-                    {/* Sidebar Tools Placeholder */}
-                    <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-4 text-cyan-400">
-                        ⚡
-                    </div>
+            <div className="flex-1 flex overflow-hidden relative z-40">
+                <aside className="w-14 flex flex-col items-center py-4 bg-black border-r border-white/10 z-50">
+                    <button className="w-9 h-9 rounded-lg bg-neon-blue/10 flex items-center justify-center mb-3 text-neon-blue border border-neon-blue/20 hover:bg-neon-blue/20 transition-all">
+                        <span className="text-lg">⚡</span>
+                    </button>
+                    {[1, 2, 3].map(i => (
+                        <button key={i} className="w-9 h-9 rounded-lg hover:bg-white/5 flex items-center justify-center mb-2 text-gray-500 hover:text-white transition-colors">
+                            <div className="w-4 h-4 bg-current opacity-20 rounded-sm" />
+                        </button>
+                    ))}
                 </aside>
+
                 <PanelGroup direction="horizontal">
                     {/* Center: Canvas & Console */}
                     <Panel className="flex flex-col relative">
                         <PanelGroup direction="vertical">
-                            {/* Canvas Area */}
                             <Panel className="bg-transparent relative overflow-hidden">
                                 <CanvasPanel />
                             </Panel>
 
                             <ResizeHandleHorizontal />
 
-                            {/* Bottom: Console Panel */}
-                            <Panel defaultSize={35} minSize={16} maxSize={50} className="border-t border-white/10 bg-black/40 backdrop-blur-xl z-40">
+                            <Panel defaultSize={30} minSize={10} maxSize={50} className="border-t border-white/10 bg-black/90 z-40">
                                 <ConsolePanel />
                             </Panel>
                         </PanelGroup>
                     </Panel>
+
                     <ResizeHandle />
 
-                    {/* Right: Inspector Panel (Properties) */}
-                    <Panel defaultSize={20} minSize={15} maxSize={30} className="flex flex-col border-l border-white/10 bg-white/5 backdrop-blur-md z-40 shadow-2xl">
+                    {/* Right: Inspector Panel */}
+                    <Panel defaultSize={20} minSize={15} maxSize={30} className="flex flex-col border-l border-white/10 bg-black/80 z-40">
                         <InspectorPanel />
                     </Panel>
                 </PanelGroup>

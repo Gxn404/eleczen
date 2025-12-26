@@ -1,5 +1,6 @@
 import React from 'react';
 
+// Standard component SVG renderers (fallback for basic components)
 export const Resistor = ({ component }) => {
     return (
         <g>
@@ -193,6 +194,35 @@ export const MOSFET = ({ component }) => {
 };
 MOSFET.ports = [{ id: 'gate', x: -15, y: 0 }, { id: 'drain', x: 10, y: -10 }, { id: 'source', x: 10, y: 10 }];
 
+/**
+ * SVG Component Renderer - Renders components from SVG data
+ */
+export const SVGComponent = ({ component, svgContent }) => {
+    if (!svgContent) return null;
+
+    // Parse SVG and extract viewBox for proper scaling
+    const viewBoxMatch = svgContent.match(/viewBox="([^"]+)"/);
+    const viewBox = viewBoxMatch ? viewBoxMatch[1] : "0 0 100 100";
+
+    // Remove the outer <svg> tag and keep only the inner content
+    const innerContent = svgContent
+        .replace(/<svg[^>]*>/, '')
+        .replace(/<\/svg>/, '');
+
+    return (
+        <g>
+            {/* Render the SVG content */}
+            <g dangerouslySetInnerHTML={{ __html: innerContent }} />
+
+            {/* Component label */}
+            <text x="0" y="30" fill="#aaa" fontSize="8" textAnchor="middle" fontFamily="monospace">
+                {component?.name || component?.type}
+            </text>
+        </g>
+    );
+};
+
+// Standard component registry (fallback)
 export const COMPONENT_REGISTRY = {
     battery: Battery,
     led: LED,
@@ -204,4 +234,44 @@ export const COMPONENT_REGISTRY = {
     mosfet: MOSFET,
 };
 
-export const getComponentDef = (type) => COMPONENT_REGISTRY[type];
+/**
+ * Get component definition - checks for custom SVG first, then falls back to standard components
+ */
+export const getComponentDef = (type, customDef = null) => {
+    // If custom definition with SVG is provided, use it
+    if (customDef?.svgPreview) {
+        return {
+            ...customDef,
+            Component: (props) => <SVGComponent {...props} svgContent={customDef.svgPreview} />,
+            ports: customDef.ports || [],
+            defaultSize: customDef.defaultSize || { width: 40, height: 40 }
+        };
+    }
+
+    // If custom definition without SVG, use it with default rendering
+    if (customDef) {
+        return {
+            ...customDef,
+            Component: COMPONENT_REGISTRY[type] || COMPONENT_REGISTRY.resistor,
+            ports: customDef.ports || [],
+            defaultSize: customDef.defaultSize || { width: 40, height: 40 }
+        };
+    }
+
+    // Fall back to standard component
+    const StandardComponent = COMPONENT_REGISTRY[type];
+    if (StandardComponent) {
+        return {
+            Component: StandardComponent,
+            ports: StandardComponent.ports || [],
+            defaultSize: StandardComponent.defaultSize || { width: 40, height: 40 }
+        };
+    }
+
+    // Ultimate fallback - generic component
+    return {
+        Component: Resistor,
+        ports: Resistor.ports,
+        defaultSize: { width: 40, height: 40 }
+    };
+};

@@ -4,10 +4,9 @@ import { useLiteSimStore } from '@/lib/litesim/state';
 import ComponentNode from './ComponentNode';
 import Wire from './Wire';
 import { getComponentDef } from './StandardParts';
-import { LibraryChooser } from './LibraryChooser';
 import { ContextMenu } from './ContextMenu';
 import ActivityPanel from './ActivityPanel';
-import LibraryManager from './LibraryManager';
+import LibraryBrowser from './LibraryBrowser';
 
 const Canvas = ({ settings }) => {
     const {
@@ -21,8 +20,7 @@ const Canvas = ({ settings }) => {
     const [view, setView] = useState({ x: 0, y: 0, zoom: 2 });
     const [drag, setDrag] = useState(null); // { type: 'pan' | 'comp' | 'handle', id, index, startX, startY, origX, origY }
     const [wiring, setWiring] = useState(null); // { fromComp, fromPort, currX, currY }
-    const [libraryOpen, setLibraryOpen] = useState(false); // For picking components
-    const [libraryManagerOpen, setLibraryManagerOpen] = useState(false); // For managing libraries
+    const [libraryOpen, setLibraryOpen] = useState(false); // For picking components and managing libraries
     const [contextMenu, setContextMenu] = useState(null); // { x, y, type, targetId }
     const [placingComponent, setPlacingComponent] = useState(null); // { type, model }
     const [junctions, setJunctions] = useState([]); // Array of {x, y}
@@ -709,10 +707,15 @@ const Canvas = ({ settings }) => {
             <ActivityPanel
                 activeDevices={activeDevices}
                 onSelectDevice={(device) => setPlacingComponent({ type: device.id })}
-                onOpenLibrary={() => setLibraryManagerOpen(true)}
+                onOpenLibrary={() => setLibraryOpen(true)}
                 onPickComponent={() => setLibraryOpen(true)}
             />
 
+            <LibraryBrowser
+                isOpen={libraryOpen}
+                onClose={() => setLibraryOpen(false)}
+                onSelect={handleLibrarySelect}
+            />
             <div
                 className="flex-1 h-full relative"
                 onDrop={handleDrop}
@@ -857,17 +860,6 @@ const Canvas = ({ settings }) => {
 
 
             </div>
-
-            <LibraryChooser
-                isOpen={libraryOpen}
-                onClose={() => setLibraryOpen(false)}
-                onSelect={handleLibrarySelect}
-            />
-
-            <LibraryManager
-                isOpen={libraryManagerOpen}
-                onClose={() => setLibraryManagerOpen(false)}
-            />
 
             {
                 contextMenu && (

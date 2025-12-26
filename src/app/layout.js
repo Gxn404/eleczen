@@ -39,25 +39,32 @@ export const metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "../../public/eleczen_favicon_32.png", sizes: "32x32", type: "image/png" },
-      { url: "../../public/eleczen_favicon_64.png", sizes: "64x64", type: "image/png" },
-      { url: "../../public/eleczen_512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [
-      { url: "../../public/eleczen_198.png", sizes: "198x198", type: "image/png" },
+      { url: "/eleczen.svg", type: "image/svg+xml" },
+      { url: "/eleczen_16.png", sizes: "16x16", type: "image/png" },
+      { url: "/eleczen_32.png", sizes: "32x32", type: "image/png" },
+      { url: "/eleczen_48.png", sizes: "48x48", type: "image/png" },
+      { url: "/eleczen_64.png", sizes: "64x64", type: "image/png" },
+      { url: "/eleczen_128.png", sizes: "128x128", type: "image/png" },
+      { url: "/eleczen_192.png", sizes: "192x192", type: "image/png" },
+      { url: "/eleczen_256.png", sizes: "256x256", type: "image/png" },
       { url: "/eleczen_512.png", sizes: "512x512", type: "image/png" },
     ],
-    other: [{ rel: "mask-icon", url: "/icon.svg", color: "#00f3ff" }],
+    apple: [
+      { url: "/eleczen_180.png", sizes: "180x180", type: "image/png" },
+      { url: "/eleczen_192.png", sizes: "192x192", type: "image/png" },
+      { url: "/eleczen_512.png", sizes: "512x512", type: "image/png" },
+    ],
+    other: [{ rel: "mask-icon", url: "/eleczen.svg" }],
   },
   openGraph: {
-    title: "ElecZen | AI-Powered Electronics Platform",
+    title: "ElecZen",
     description:
       "Design, simulate, and discover components with AI-powered tools.",
     url: "https://eleczen.app",
     siteName: "ElecZen",
     images: [
       {
-        url: "/og-image.jpg", // We'll need to create this
+        url: "/eleczen_512.png",
         width: 1200,
         height: 630,
         alt: "ElecZen Platform Preview",
@@ -71,7 +78,7 @@ export const metadata = {
     title: "ElecZen | AI-Powered Electronics Platform",
     description: "The ultimate platform for electronics engineers.",
     creator: "@eleczen",
-    images: ["/og-image.jpg"],
+    images: ["/eleczen_512.png"],
   },
   robots: {
     index: true,
@@ -119,8 +126,8 @@ export default function RootLayout({ children }) {
           <BottomNav />
         </Providers>
       </body>
-      {/* <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3992023609980021"
-        crossOrigin="anonymous"></script> */}
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3992023609980021"
+        crossOrigin="anonymous"></script>
     </html>
   );
 }

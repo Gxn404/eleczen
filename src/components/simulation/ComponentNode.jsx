@@ -4,10 +4,11 @@ import CustomComponent from './CustomComponent';
 
 const ComponentNode = ({ component, isSelected, onMouseDown, showLabels = true }) => {
     const { type, x, y, rotation, state } = component;
-    let CompDef = getComponentDef(type);
-    let ports = CompDef?.ports;
+    let def = getComponentDef(type, component.customDef);
+    let CompDef = def?.Component || def; // Support both old and new format
+    let ports = def?.ports || [];
 
-    // Handle Custom Components
+    // Handle Custom Components (legacy support)
     if (!CompDef && component.customDef) {
         CompDef = CustomComponent;
         ports = component.customDef.ports;
